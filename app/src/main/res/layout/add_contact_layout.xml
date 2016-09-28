@@ -18,7 +18,7 @@
         android:layout_height="wrap_content"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:text="Please enter name"
-        android:id="@+id/textView8"
+        android:id="@+id/enterMsg"
         android:layout_gravity="center"
         android:layout_marginTop="20dp"
         android:textStyle="italic" />

@@ -53,6 +53,7 @@ public class ContactActivity extends AppCompatActivity {
     public static String TAG = ContactActivity.class.getName();
     private static int counter;
     private ProgressBar addProgressBar;
+    private TextView addMEnterField;
     private TextView addMsgField;
     private EditText addTopicField;
     private AlertDialog addDialog;
@@ -260,6 +261,7 @@ public class ContactActivity extends AppCompatActivity {
 
         addProgressBar = (ProgressBar) v.findViewById(R.id.addChatBar);
         addProgressBar.setVisibility(View.GONE);
+        addMEnterField = (TextView) v.findViewById(R.id.enterMsg);
         addMsgField = (TextView) v.findViewById(R.id.addContactMsg);
         addMsgField.setVisibility(View.GONE);
         addTopicField = (EditText) v.findViewById(R.id.topic);
@@ -358,7 +360,10 @@ public class ContactActivity extends AppCompatActivity {
                 if (state) {
                     ci.setStatus(ConversationStatus.SUBSCRIBED);
                     addProgressBar.setVisibility(View.GONE);
-
+                    contactName.setVisibility(View.GONE);
+                    addMEnterField.setVisibility(View.GONE);
+                    addMsgField.setVisibility(View.VISIBLE);
+                    addTopicField.setVisibility(View.VISIBLE);
                     addMsgField.setTextColor(Color.GREEN);
                     addMsgField.setText("Oda oluşturuldu. Lütfen katılımcılara aşağıdaki kodu gönderin.");
                     addTopicField.setText(topic);
@@ -369,9 +374,9 @@ public class ContactActivity extends AppCompatActivity {
                     addMsgField.setText("Oda oluşturulamadı!");
                     addDialog.dismiss();
                 }
+                DbEntryService.saveChat(ci);
                 mAdapter.clear();
                 fillContactInfo();
-                DbEntryService.saveChat(ci);
 
             }
         };
