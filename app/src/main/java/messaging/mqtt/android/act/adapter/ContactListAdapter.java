@@ -51,12 +51,22 @@ public class ContactListAdapter extends ArrayAdapter<ConversationInfo> {
 
         RelativeLayout contactLayout = (RelativeLayout) row.findViewById(R.id.contactLayout);
         TextView name = (TextView) row.findViewById(R.id.contactName);
-        TextView mail = (TextView) row.findViewById(R.id.contactMail);
+        TextView topic = (TextView) row.findViewById(R.id.contactMail);
         TextView unreadNumber = (TextView) row.findViewById(R.id.msgUnread);
         ImageView image = (ImageView) row.findViewById(R.id.imageView2);
 
         name.setText(coment.getRoomName());
-        mail.setText(coment.getRoomTopic());
+        topic.setText(coment.getRoomTopic());
+        if (coment.getStatus() != null) {
+            switch (coment.getStatus()) {
+                case SUBSCRIBED:
+                    topic.setTextColor(Color.GREEN);
+                    break;
+                case UNSUBSCRIBED:
+                    topic.setTextColor(Color.RED);
+                    break;
+            }
+        }
 
         if (mSelectedItemsIds.get(position)) {
             contactLayout.setBackgroundResource(R.drawable.home_bckgrnd);
@@ -66,13 +76,7 @@ public class ContactListAdapter extends ArrayAdapter<ConversationInfo> {
         if (coment.getUnreadMsgNumber() != null && coment.getUnreadMsgNumber() != 0) {
             unreadNumber.setText("(" + coment.getUnreadMsgNumber() + ")");
         }
-//        row.setOnLongClickListener(new View.OnLongClickListener() {
-//            @Override
-//            pub boolean onLongClick(View v) {
-//                //toggleSelection(position);
-//                return true;
-//            }
-//        });
+
         return row;
     }
 

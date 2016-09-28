@@ -1,11 +1,14 @@
 package messaging.mqtt.android.common.model;
 
+import messaging.mqtt.android.common.ref.ConversationStatus;
+
 public class ConversationInfo {
 
     private Long id;
     private String roomName;
     private String roomTopic;
     private Integer unreadMsgNumber;
+    private ConversationStatus status;
 
     public Long getId() {
         return id;
@@ -37,5 +40,13 @@ public class ConversationInfo {
 
     public void setUnreadMsgNumber(Integer unreadMsgNumber) {
         this.unreadMsgNumber = unreadMsgNumber;
+    }
+
+    public ConversationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ConversationStatus status) {
+        this.status = status;
     }
 }

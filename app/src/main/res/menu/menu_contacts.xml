@@ -3,14 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <!-- "Mark Favorite", should appear as action button if possible -->
-    <item
-        android:id="@+id/addContact"
-        android:icon="@drawable/ic_person_add_white_24dp"
-        android:title="Add contact"
-        app:showAsAction="ifRoom"/>
+
     <item
         android:id="@+id/joinContact"
         android:icon="@drawable/join_topic"
+        android:title="Add contact"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/addContact"
+        android:icon="@drawable/ic_person_add_white_24dp"
         android:title="Add contact"
         app:showAsAction="ifRoom"/>
 

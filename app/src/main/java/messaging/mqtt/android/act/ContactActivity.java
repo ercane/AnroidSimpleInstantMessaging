@@ -35,10 +35,12 @@ import java.util.regex.Pattern;
 import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.adapter.ContactListAdapter;
 import messaging.mqtt.android.common.model.ConversationInfo;
+import messaging.mqtt.android.common.ref.ConversationStatus;
 import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
 import messaging.mqtt.android.mqtt.MqttInit;
 import messaging.mqtt.android.service.AsimService;
+import messaging.mqtt.android.tasks.MqttSubscribeTask;
 import messaging.mqtt.android.util.BoolFlag;
 import messaging.mqtt.android.util.Notification;
 
@@ -197,6 +199,9 @@ public class ContactActivity extends AppCompatActivity {
                             int count = DbEntryService.getUnreadNumber(ci.getId());
                             ci.setUnreadMsgNumber(count);
                             contactInfos.add(ci);
+
+                            MqttSubscribeTask subscribeTask = new MqttSubscribeTask(ci);
+                            AsimService.getThreadPoolExecutor().submit(subscribeTask);
                         }
                         return true;
                     } catch (Exception e) {
@@ -351,21 +356,22 @@ public class ContactActivity extends AppCompatActivity {
             protected void onPostExecute(Boolean state) {
                 super.onPostExecute(state);
                 if (state) {
+                    ci.setStatus(ConversationStatus.SUBSCRIBED);
                     addProgressBar.setVisibility(View.GONE);
 
                     addMsgField.setTextColor(Color.GREEN);
                     addMsgField.setText("Oda oluşturuldu. Lütfen katılımcılara aşağıdaki kodu gönderin.");
                     addTopicField.setText(topic);
-
-                    addDialog.dismiss();
-                    DbEntryService.saveChat(ci);
-                    mAdapter.clear();
-                    fillContactInfo();
+                    //addDialog.dismiss();
                 } else {
+                    ci.setStatus(ConversationStatus.UNSUBSCRIBED);
                     addMsgField.setTextColor(Color.RED);
                     addMsgField.setText("Oda oluşturulamadı!");
                     addDialog.dismiss();
                 }
+                mAdapter.clear();
+                fillContactInfo();
+                DbEntryService.saveChat(ci);
 
             }
         };

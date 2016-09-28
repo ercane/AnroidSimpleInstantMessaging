@@ -41,6 +41,7 @@ public class DbEntryService {
                 values.put(DbConstants.CHAT_UNREAD_MESSAGE, 0);
                 values.put(DbConstants.CHAT_NAME, ci.getRoomName());
                 values.put(DbConstants.CHAT_TOPIC, ci.getRoomTopic());
+                values.put(DbConstants.CHAT_STATUS, ci.getStatus().getCode());
                 db.insert(DbConstants.CHAT_TABLE_NAME, null, values);
             }
             db.close(); //Database Bağlantısını kapattık*/
