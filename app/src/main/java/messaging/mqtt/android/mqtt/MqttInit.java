@@ -1,10 +1,7 @@
 package messaging.mqtt.android.mqtt;
 
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.ServiceConnection;
-import android.os.IBinder;
 import android.util.Log;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -31,48 +28,6 @@ public class MqttInit implements MqttCallback {
         init();
     }
 
-    private boolean init() {
-        try {
-            mqttClient = new MqttClient(broker, clientId, new MemoryPersistence());
-            MqttPushCallback callback = new MqttPushCallback(context);
-            mqttClient.setCallback(callback);
-            mqttClient.connect();
-            return true;
-        } catch (MqttException e) {
-            Log.e(TAG, e.getMessage());
-            return false;
-        }
-    }
-
-    public boolean subscribe(String topic) {
-        try {
-
-            if (!mqttClient.isConnected()) {
-                mqttClient.connect();
-            }
-
-            mqttClient.subscribe(topic, 2);
-            return true;
-        } catch (MqttException e) {
-            Log.e(TAG, e.getMessage());
-            return false;
-        }
-    }
-
-    public boolean sendMessage(String topic, byte[] payload) {
-        try {
-            MqttMessage m = new MqttMessage();
-            m.setPayload(payload);
-            m.setQos(2);
-            m.setRetained(false);
-            mqttClient.publish(topic, m);
-            return true;
-        } catch (MqttException e) {
-            Log.e(TAG, e.getMessage());
-            return false;
-        }
-    }
-
     public static String getBroker() {
         return broker;
     }
@@ -89,6 +44,62 @@ public class MqttInit implements MqttCallback {
         MqttInit.clientId = clientId;
     }
 
+    private synchronized boolean init() {
+        try {
+            mqttClient = new MqttClient(broker, clientId, new MemoryPersistence());
+            MqttPushCallback callback = new MqttPushCallback(context);
+            mqttClient.setCallback(callback);
+            mqttClient.connect();
+            Log.d(TAG, "Mqtt Client connected");
+            return true;
+        } catch (MqttException e) {
+            Log.e(TAG, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean subscribe(String topic) {
+        try {
+
+            if (mqttClient == null) {
+                init();
+            }
+
+            if (!mqttClient.isConnected()) {
+                mqttClient.connect();
+            }
+
+            mqttClient.subscribe(topic);
+            Log.d(TAG, "Mqtt client subscribed to: " + topic);
+            return true;
+        } catch (MqttException e) {
+            Log.e(TAG, e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean sendMessage(String topic, byte[] payload) {
+        try {
+            if (mqttClient == null) {
+                init();
+            }
+
+            if (!mqttClient.isConnected()) {
+                mqttClient.connect();
+            }
+            
+            MqttMessage m = new MqttMessage();
+            m.setPayload(payload);
+            m.setQos(2);
+            m.setRetained(false);
+            mqttClient.publish(topic, m);
+            Log.d(TAG, "Mqtt client send message to: " + topic);
+            return true;
+        } catch (MqttException e) {
+            Log.e(TAG, e.getMessage());
+            return false;
+        }
+    }
 
     @Override
     public void connectionLost(Throwable cause) {
@@ -100,7 +111,8 @@ public class MqttInit implements MqttCallback {
         Intent broadcastIntent = new Intent();
         broadcastIntent.setAction(MqttConstants.MQTT_MSG_RECEIVED_INTENT);
         broadcastIntent.putExtra(MqttConstants.MQTT_MSG_RECEIVED_TOPIC, topic);
-        broadcastIntent.putExtra(MqttConstants.MQTT_MSG_RECEIVED_MSG, new String(message.getPayload()));
+        broadcastIntent.putExtra(MqttConstants.MQTT_MSG_RECEIVED_MSG, new String(message
+                .getPayload()));
         context.sendBroadcast(broadcastIntent);
     }
 

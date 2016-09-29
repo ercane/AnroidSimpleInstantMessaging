@@ -30,7 +30,7 @@ public class AsimService extends Service {
     private static Database db;
     private static MqttInit mqttInit;
     public static boolean running;
-    private static int corePoolSize = 5;
+    private static int corePoolSize = 1;
     private static int maximumPoolSize = 10;
     private static LinkedBlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
     private static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(

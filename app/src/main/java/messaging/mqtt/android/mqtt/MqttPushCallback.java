@@ -1,9 +1,11 @@
 package messaging.mqtt.android.mqtt;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.util.Base64;
+import android.util.Log;
 
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -23,6 +25,7 @@ import messaging.mqtt.android.database.DbEntryService;
  * Created by eercan on 28.03.2016.
  */
 public class MqttPushCallback implements MqttCallback {
+    private static final String TAG = MqttPushCallback.class.getSimpleName();
     private Context context;
 
 
@@ -37,14 +40,16 @@ public class MqttPushCallback implements MqttCallback {
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
+        Log.d(TAG, "Message arrived");
         byte[] payload = message.getPayload();
         String payloadMsg = new String(payload, "UTF-8");
         HashMap<String, String> chatByTopic = DbEntryService.getChatByTopic(topic);
 
-        if (payloadMsg.startsWith(MqttConstants.MQTT_DH_PUBLIC_KEY)) {
+        if (payloadMsg.startsWith(MqttConstants.MQTT_DH_PUBLIC_SELF_KEY)) {
             String[] split = payloadMsg.split(MqttConstants.MQTT_SPLIT_PREFIX);
-            MsgEncryptOperations.createMsgKeySpec(context, topic, split[1],
-                    Integer.parseInt(chatByTopic.get(DbConstants.CHAT_PBK_SENT)));
+            if (!Build.ID.equals(split[1]))
+                MsgEncryptOperations.createMsgKeySpec(context, topic, split[2],
+                        Integer.parseInt(chatByTopic.get(DbConstants.CHAT_PBK_SENT)));
         } else if (payloadMsg.startsWith(MqttConstants.MQTT_DH_PB_SENT)) {
             DbEntryService.updateChatPbStatus(topic, 1);
         } else {

@@ -15,7 +15,9 @@ public class MqttConstants {
     public static final String MQTT_STATUS_CODE = "com.dalelane.mqtt.STATUS_MSG";
     public static final String MQTT_PING_ACTION = "com.dalelane.mqtt.PING";
     public static final String MQTT_SPLIT_PREFIX = "__-__-__";
-    public static final String MQTT_DH_PUBLIC_KEY = "DHPUBLIC" + MQTT_SPLIT_PREFIX;
-    public static final String MQTT_DH_PB_SENT = "DHSENT" + MQTT_SPLIT_PREFIX;
     public static final String MQTT_SELF_PREFIX = Build.ID + MQTT_SPLIT_PREFIX;
+    public static final String MQTT_DH_PUBLIC_KEY = "DHPUBLIC" + MQTT_SPLIT_PREFIX +
+            MQTT_SELF_PREFIX;
+    public static final String MQTT_DH_PUBLIC_SELF_KEY = "DHPUBLIC" + MQTT_SPLIT_PREFIX;
+    public static final String MQTT_DH_PB_SENT = "DHSENT" + MQTT_SPLIT_PREFIX;
 }

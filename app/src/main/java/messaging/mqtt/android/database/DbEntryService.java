@@ -38,13 +38,13 @@ public class DbEntryService {
 
             ContentValues values = new ContentValues();
 
-            if (count == 0) {
-                values.put(DbConstants.CHAT_UNREAD_MESSAGE, 0);
-                values.put(DbConstants.CHAT_NAME, ci.getRoomName());
-                values.put(DbConstants.CHAT_PBK_SENT, ci.getIsSent());
-                values.put(DbConstants.CHAT_TOPIC, ci.getRoomTopic());
-                values.put(DbConstants.CHAT_STATUS, ci.getStatus().getCode());
-            }
+            //if (count == 0) {
+            values.put(DbConstants.CHAT_UNREAD_MESSAGE, 0);
+            values.put(DbConstants.CHAT_NAME, ci.getRoomName());
+            values.put(DbConstants.CHAT_PBK_SENT, ci.getIsSent());
+            values.put(DbConstants.CHAT_TOPIC, ci.getRoomTopic());
+            values.put(DbConstants.CHAT_STATUS, ci.getStatus().getCode());
+            //}
 
             Long id = db.insert(DbConstants.CHAT_TABLE_NAME, null, values);
             db.close(); //Database Bağlantısını kapattık*/
@@ -56,7 +56,8 @@ public class DbEntryService {
         }
     }
 
-    public static Long saveMessage(Long chatId, Integer type, String content, Long sendingTime, Integer status) {
+    public static Long saveMessage(Long chatId, Integer type, String content, Long sendingTime,
+                                   Integer status) {
 
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
@@ -161,7 +162,8 @@ public class DbEntryService {
         return chat;
     }
 
-    public static ArrayList<HashMap<String, String>> getAllMessagesByChat(Long chatId, Integer size, Long time) {
+    public static ArrayList<HashMap<String, String>> getAllMessagesByChat(Long chatId, Integer
+            size, Long time) {
         SQLiteDatabase db = sqoh.getReadableDatabase();
         long today = System.currentTimeMillis();
         long hour = 1000 * 60 * 60;
@@ -211,7 +213,8 @@ public class DbEntryService {
     public static void removeMessages(Long chatId) {
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
-            db.delete(DbConstants.MESSAGE_TABLE_NAME, DbConstants.MESSAGE_CHAT_ID + " = '" + chatId + "' ", null);
+            db.delete(DbConstants.MESSAGE_TABLE_NAME, DbConstants.MESSAGE_CHAT_ID + " = '" +
+                    chatId + "' ", null);
             db.close();
             Log.e(TAG, "Message deleted. ID: " + chatId);
         } catch (Exception e) {
@@ -222,7 +225,8 @@ public class DbEntryService {
     public static void removeMessage(Long id) {
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
-            db.delete(DbConstants.MESSAGE_TABLE_NAME, DbConstants.MESSAGE_ID + " = " + id + " ", null);
+            db.delete(DbConstants.MESSAGE_TABLE_NAME, DbConstants.MESSAGE_ID + " = " + id + " ",
+                    null);
             db.close();
             Log.e(TAG, "Message deleted. ID: " + id);
         } catch (Exception e) {
@@ -247,10 +251,12 @@ public class DbEntryService {
 
             db.update(DbConstants.MESSAGE_TABLE_NAME, values, where, null);
             db.close();
-            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status updated. ID: " + id + " STATUS:" + code);
+            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status updated. ID: " + id + " STATUS:"
+                    + code);
             return true;
         } catch (Exception e) {
-            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status cannot be updated. ID: " + id + " STATUS:" + code);
+            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status cannot be updated. ID: " + id +
+                    " STATUS:" + code);
             return false;
         }
     }
@@ -264,7 +270,8 @@ public class DbEntryService {
 
             String where = "(" + DbConstants.MESSAGE_CHAT_ID + " = '" + recipientMail + "' AND " +
                     DbConstants.MESSAGE_TYPE + " = " + 1 + " AND " +
-                    DbConstants.MESSAGE_STATUS + " = " + ConversationMessageStatus.POST.getCode() + ")";
+                    DbConstants.MESSAGE_STATUS + " = " + ConversationMessageStatus.POST.getCode()
+                    + ")";
 
 
             ContentValues values = new ContentValues();
@@ -272,10 +279,12 @@ public class DbEntryService {
 
             int update = db.update(DbConstants.MESSAGE_TABLE_NAME, values, where, null);
             db.close();
-            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + "all status set to receive. recipientMail: " + recipientMail);
+            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + "all status set to receive. " +
+                    "recipientMail: " + recipientMail);
             return true;
         } catch (Exception e) {
-            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status cannot be set to received updated. ");
+            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status cannot be set to received " +
+                    "updated. ");
             return false;
         }
     }
@@ -290,7 +299,8 @@ public class DbEntryService {
             String where = "(" + DbConstants.MESSAGE_CHAT_ID + " = '" + recipientMail + "' AND " +
                     DbConstants.MESSAGE_TYPE + " = " + 1 + " AND " +
                     "(" +
-                    DbConstants.MESSAGE_STATUS + " = " + ConversationMessageStatus.RECEIVED.getCode() + " OR " +
+                    DbConstants.MESSAGE_STATUS + " = " + ConversationMessageStatus.RECEIVED
+                    .getCode() + " OR " +
                     DbConstants.MESSAGE_STATUS + " = " + ConversationMessageStatus.POST.getCode() +
                     "))";
 
@@ -299,10 +309,12 @@ public class DbEntryService {
 
             db.update(DbConstants.MESSAGE_TABLE_NAME, values, where, null);
             db.close();
-            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + "all status set to receive. recipientMail: " + recipientMail);
+            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + "all status set to receive. " +
+                    "recipientMail: " + recipientMail);
             return true;
         } catch (Exception e) {
-            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status cannot be set to received updated. ");
+            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status cannot be set to received " +
+                    "updated. ");
             return false;
         }
     }
@@ -319,10 +331,12 @@ public class DbEntryService {
 
             int update = db.update(DbConstants.MESSAGE_TABLE_NAME, values, where, null);
             db.close();
-            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + "all status set to receive. Number: " + update);
+            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + "all status set to receive. Number: " +
+                    update);
             return true;
         } catch (Exception e) {
-            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status cannot be set to received updated. ");
+            Log.e(TAG, DbConstants.MESSAGE_TABLE_NAME + " status cannot be set to received " +
+                    "updated. ");
             return false;
         }
     }
@@ -372,7 +386,8 @@ public class DbEntryService {
             db.close();
             Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status updated. ID: " + recipientMail);
         } catch (Exception e) {
-            Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status cannot be updated. ID: " + recipientMail);
+            Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status cannot be updated. ID: " +
+                    recipientMail);
 
         }
     }

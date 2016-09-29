@@ -4,7 +4,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -90,7 +89,8 @@ public class ContactActivity extends AppCompatActivity {
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
         listView.setMultiChoiceModeListener(new ListView.MultiChoiceModeListener() {
             @Override
-            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean
+                    checked) {
                 final int checkedCount = listView.getCheckedItemCount();
                 // Set the CAB title according to total checked items
                 mode.setTitle(checkedCount + " Selected");
@@ -126,9 +126,13 @@ public class ContactActivity extends AppCompatActivity {
                                     // Remove selected items following the ids
                                     mAdapter.remove(mAdapterItem);
                                     DbEntryService.removeChat(mAdapterItem.getId());
-                                    Toast.makeText(ContactActivity.this, "Conversation with " + mAdapterItem.getRoomName() + " is removed.", Toast.LENGTH_SHORT);
+                                    Toast.makeText(ContactActivity.this, "Conversation with " +
+                                            mAdapterItem.getRoomName() + " is removed.", Toast
+                                            .LENGTH_SHORT);
                                 } catch (Exception e) {
-                                    Toast.makeText(ContactActivity.this, "Conversation with cannot be removed. " + e.getMessage(), Toast.LENGTH_LONG);
+                                    Toast.makeText(ContactActivity.this, "Conversation with " +
+                                            "cannot be removed. " + e.getMessage(), Toast
+                                            .LENGTH_LONG);
                                 }
                             }
                         }
@@ -304,7 +308,8 @@ public class ContactActivity extends AppCompatActivity {
                 try {
                     addMsgField.setText("");
 
-                    if (contactName.getText() == null || "".equals(contactName.getText().toString())) {
+                    if (contactName.getText() == null || "".equals(contactName.getText().toString
+                            ())) {
                         throw new Exception("Name field cannot be null");
                     } else {
                         addContactTask(contactName.getText().toString()).execute();
@@ -342,10 +347,17 @@ public class ContactActivity extends AppCompatActivity {
                 try {
                     Long time = System.currentTimeMillis();
 
-                    topic = Build.ID + "___" + time;
+                    //topic = Build.ID + "___" + time;
+                    topic = "denemeamaclitopic";
                     ci.setRoomTopic(topic);
-
-                    return AsimService.getMqttInit().subscribe(topic);
+                    byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
+                            .this, ci.getRoomTopic());
+                    String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
+                    boolean state = AsimService.getMqttInit().subscribe(topic);
+                    if (state)
+                        AsimService.getMqttInit().sendMessage(topic, (MqttConstants
+                                .MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
+                    return state;
                 } catch (Exception e) {
                     return false;
                 }
@@ -362,7 +374,8 @@ public class ContactActivity extends AppCompatActivity {
                     addMsgField.setVisibility(View.VISIBLE);
                     addTopicField.setVisibility(View.VISIBLE);
                     addMsgField.setTextColor(Color.GREEN);
-                    addMsgField.setText("Oda oluşturuldu. Lütfen katılımcılara aşağıdaki kodu gönderin.");
+                    addMsgField.setText("Oda oluşturuldu. Lütfen katılımcılara aşağıdaki kodu " +
+                            "gönderin.");
                     addTopicField.setText(topic);
                     addContactBtn.setOnClickListener(new View.OnClickListener() {
                         @Override
@@ -370,14 +383,6 @@ public class ContactActivity extends AppCompatActivity {
                             addDialog.dismiss();
                         }
                     });
-
-                    try {
-                        byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(getApplicationContext(), ci.getRoomTopic());
-                        String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
-                        AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
-                    } catch (Exception e) {
-                        Log.e(TAG, e.getMessage());
-                    }
 
                     ci.setId(DbEntryService.saveChat(ci));
                     if (mAdapter != null) {
@@ -440,11 +445,14 @@ public class ContactActivity extends AppCompatActivity {
                 try {
                     joinMsgField.setText("");
 
-                    if (joinNameField.getText() == null || "".equals(joinNameField.getText().toString()) ||
-                            joinTopicField.getText() == null || "".equals(joinTopicField.getText().toString())) {
+                    if (joinNameField.getText() == null || "".equals(joinNameField.getText()
+                            .toString()) ||
+                            joinTopicField.getText() == null || "".equals(joinTopicField.getText
+                            ().toString())) {
                         throw new Exception("Name or topic field cannot be null");
                     } else {
-                        joinContactTask(joinNameField.getText().toString(), joinTopicField.getText().toString()).execute();
+                        joinContactTask(joinNameField.getText().toString(), joinTopicField
+                                .getText().toString()).execute();
                     }
                 } catch (Exception e) {
                     joinMsgField.setText(e.getMessage());
@@ -458,7 +466,8 @@ public class ContactActivity extends AppCompatActivity {
         joinDialog.show();
     }
 
-    public AsyncTask<Void, Void, Boolean> joinContactTask(final String roomName, final String roomTopic) {
+    public AsyncTask<Void, Void, Boolean> joinContactTask(final String roomName, final String
+            roomTopic) {
         return new AsyncTask<Void, Void, Boolean>() {
             ConversationInfo ci;
 
@@ -472,12 +481,20 @@ public class ContactActivity extends AppCompatActivity {
 
             @Override
             protected Boolean doInBackground(Void... params) {
-                ci = new ConversationInfo();
-                ci.setRoomName(roomName);
-                ci.getRoomTopic();
-                ci.setIsSent(0);
                 try {
-                    return AsimService.getMqttInit().subscribe(roomTopic);
+                    ci = new ConversationInfo();
+                    ci.setRoomName(roomName);
+                    ci.setRoomTopic(roomTopic);
+                    ci.setIsSent(0);
+
+                    byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
+                            .this, ci.getRoomTopic());
+                    String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
+                    boolean state = AsimService.getMqttInit().subscribe(roomTopic);
+                    if (state)
+                        AsimService.getMqttInit().sendMessage(roomTopic, (MqttConstants
+                                .MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
+                    return state;
                 } catch (Exception e) {
                     return false;
                 }
@@ -490,26 +507,18 @@ public class ContactActivity extends AppCompatActivity {
                     ci.setStatus(ConversationStatus.SUBSCRIBED);
                     joinProgressBar.setVisibility(View.GONE);
                     joinMsgField.setVisibility(View.VISIBLE);
-                    addDialog.dismiss();
+                    joinDialog.dismiss();
                     ci.setId(DbEntryService.saveChat(ci));
 
                     if (mAdapter != null) {
                         mAdapter.add(ci);
                     }
 
-                    try {
-                        byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(getApplicationContext(), ci.getRoomTopic());
-                        String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
-                        AsimService.getMqttInit().sendMessage(ci.getRoomTopic(),
-                                (MqttConstants.MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
-                    } catch (Exception e) {
-                        Log.e(TAG, e.getMessage());
-                    }
                 } else {
                     ci.setStatus(ConversationStatus.UNSUBSCRIBED);
                     joinMsgField.setTextColor(Color.RED);
                     joinMsgField.setText("Oda katılım gerçekleşmedi!");
-                    addDialog.dismiss();
+                    joinDialog.dismiss();
                 }
 
 

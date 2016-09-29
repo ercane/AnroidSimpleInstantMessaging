@@ -42,6 +42,7 @@ import messaging.mqtt.android.crypt.DbEncryptOperations;
 import messaging.mqtt.android.crypt.MsgEncryptOperations;
 import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
+import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.ActivityStatus;
 import messaging.mqtt.android.tasks.DbDecyrptTask;
@@ -57,12 +58,13 @@ public class ConversationActivity extends AppCompatActivity {
     public static Long chatId;
     public static String chatTopic;
     public static ActivityStatus status;
-    public static Comparator<ConversationMessageInfo> comparator = new Comparator<ConversationMessageInfo>() {
-        @Override
-        public int compare(ConversationMessageInfo first, ConversationMessageInfo second) {
-            return first.getUpdatedDate().compareTo(second.getUpdatedDate());
-        }
-    };
+    public static Comparator<ConversationMessageInfo> comparator = new
+            Comparator<ConversationMessageInfo>() {
+                @Override
+                public int compare(ConversationMessageInfo first, ConversationMessageInfo second) {
+                    return first.getUpdatedDate().compareTo(second.getUpdatedDate());
+                }
+            };
     private static Integer SHOW_LIMIT = 20;
     private static Handler onlineHandler;
     private static Handler offlineHandler;
@@ -152,7 +154,8 @@ public class ConversationActivity extends AppCompatActivity {
 //        actionBar.setDisplayShowTitleEnabled(false);
 //        actionBar.setCustomView(customActionBarView);
 //        actionBar.setDisplayShowCustomEnabled(true);
-        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
+        mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id
+                .activity_main_swipe_refresh_layout);
         listView = (ListView) findViewById(R.id.messageList);
         messageList = new ArrayList<ConversationMessageInfo>();
 
@@ -165,7 +168,8 @@ public class ConversationActivity extends AppCompatActivity {
             private int nr = 0;
 
             @Override
-            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean checked) {
+            public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean
+                    checked) {
                 // Capture total checked items
                 final int checkedCount = listView.getCheckedItemCount();
                 // Set the CAB title according to total checked items
@@ -209,12 +213,14 @@ public class ConversationActivity extends AppCompatActivity {
 
                             }
                         }
-                        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        ClipboardManager clipboard = (ClipboardManager) getSystemService
+                                (CLIPBOARD_SERVICE);
                         ClipData clip = ClipData.newPlainText("label", copyMsg);
                         clipboard.setPrimaryClip(clip);
                         // Close CAB
                         mode.finish();
-                        Toast.makeText(ConversationActivity.this, "Copied to clipboard", Toast.LENGTH_LONG).show();
+                        Toast.makeText(ConversationActivity.this, "Copied to clipboard", Toast
+                                .LENGTH_LONG).show();
                         return true;
 
                     case R.id.item_select_all:
@@ -238,7 +244,8 @@ public class ConversationActivity extends AppCompatActivity {
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                 mode.getMenuInflater().inflate(R.menu.chat_contextual, menu);
-                ConversationActivity.this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
+                ConversationActivity.this.getWindow().setSoftInputMode(WindowManager.LayoutParams
+                        .SOFT_INPUT_STATE_ALWAYS_HIDDEN);
                 ConversationActivity.this.mode = mode;
                 return true;
             }
@@ -297,7 +304,8 @@ public class ConversationActivity extends AppCompatActivity {
                 try {
                     Bundle data = msg.getData();
                     if (data.getSerializable(ADD_MESSAGE) != null) {
-                        final ConversationMessageInfo cmi = (ConversationMessageInfo) data.getSerializable(ADD_MESSAGE);
+                        final ConversationMessageInfo cmi = (ConversationMessageInfo) data
+                                .getSerializable(ADD_MESSAGE);
                         cmi.setStatus(null);
                         if (status != null && (status == ActivityStatus.STOPPED ||
                                 status == ActivityStatus.DESTROYED ||
@@ -323,17 +331,40 @@ public class ConversationActivity extends AppCompatActivity {
 
         TextView tvError = (TextView) findViewById(R.id.tvError);
         RelativeLayout msgLayout = (RelativeLayout) findViewById(R.id.messageLayout);
-        HashMap<String, String> chatByTopic = DbEntryService.getChatByTopic(chatTopic);
-        if ("0".equals(chatByTopic.get(DbConstants.CHAT_PBK_SENT))) {
+        HashMap<String, String> chatRoom = DbEntryService.getChatByTopic(chatTopic);
+        if ("0".equals(chatRoom.get(DbConstants.CHAT_PBK_SENT))) {
             tvError.setText(R.string.key_not_created_error);
             tvError.setVisibility(View.VISIBLE);
             mSwipeRefreshLayout.setVisibility(View.GONE);
+            msgLayout.setVisibility(View.GONE);
             msgLayout.setEnabled(false);
+
+            try {
+                String enc = chatRoom.get(DbConstants.CHAT_PBK);
+                String pbStr = null;
+
+                if (enc != null) {
+                    byte[] dec = DbEncryptOperations.decrypt(Base64.decode(enc.getBytes(), Base64
+                            .DEFAULT));
+                    pbStr = Base64.encodeToString(dec, Base64.DEFAULT);
+                } else {
+                    byte[] pubkey = MsgEncryptOperations.createSelfKeySpec
+                            (ConversationActivity.this, chatTopic);
+                    pbStr = Base64.encodeToString(pubkey, Base64.DEFAULT);
+                }
+
+                AsimService.getMqttInit().sendMessage(chatTopic, (MqttConstants
+                        .MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
         } else {
             tvError.setVisibility(View.GONE);
             mSwipeRefreshLayout.setVisibility(View.VISIBLE);
             msgLayout.setEnabled(true);
-            adapter = new MessageListAdapter(getApplicationContext(), R.layout.message_layout, messageList);
+            adapter = new MessageListAdapter(getApplicationContext(), R.layout.message_layout,
+                    messageList);
             listView.setAdapter(adapter);
             getMessages();
         }
@@ -366,7 +397,8 @@ public class ConversationActivity extends AppCompatActivity {
 
                     adapter.getDecyrptMap().put(id, true);
                     adapter.add(ci);
-                    DbEntryService.updateMessageStatus(id, ConversationMessageStatus.READ.getCode());
+                    DbEntryService.updateMessageStatus(id, ConversationMessageStatus.READ.getCode
+                            ());
                 }
 
             } catch (NumberFormatException e) {
@@ -379,7 +411,8 @@ public class ConversationActivity extends AppCompatActivity {
 
     private void getMessages() {
         try {
-            final ArrayList<HashMap<String, String>> first = DbEntryService.getAllMessagesByChat(chatId, SHOW_LIMIT, messageLimitTime);
+            final ArrayList<HashMap<String, String>> first = DbEntryService.getAllMessagesByChat
+                    (chatId, SHOW_LIMIT, messageLimitTime);
             String temp = null;
             if (first.size() > 0)
                 temp = first.get(first.size() - 1).get(DbConstants.MESSAGE_SENDING_TIME);
@@ -387,15 +420,18 @@ public class ConversationActivity extends AppCompatActivity {
 
             showMessagesTask(first).execute();
             if (first.size() == SHOW_LIMIT) {
-                mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener
+                        () {
                     @Override
                     public void onRefresh() {
                         if (mode != null)
                             mode.finish();
                         int size = adapter.getMessageList().size();
-                        List<HashMap<String, String>> addList = DbEntryService.getAllMessagesByChat(chatId, size + SHOW_LIMIT, messageLimitTime);
+                        List<HashMap<String, String>> addList = DbEntryService
+                                .getAllMessagesByChat(chatId, size + SHOW_LIMIT, messageLimitTime);
                         if (addList.size() == size + SHOW_LIMIT) {
-                            String temp = addList.get(addList.size() - 1).get(DbConstants.MESSAGE_SENDING_TIME);
+                            String temp = addList.get(addList.size() - 1).get(DbConstants
+                                    .MESSAGE_SENDING_TIME);
                             messageLimitTime = Long.parseLong(temp);
                         } else {
                             messageLimitTime = System.currentTimeMillis();
@@ -405,7 +441,8 @@ public class ConversationActivity extends AppCompatActivity {
                 });
             } else {
                 mSwipeRefreshLayout.setRefreshing(false);
-                mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+                mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener
+                        () {
                     @Override
                     public void onRefresh() {
                         mSwipeRefreshLayout.setRefreshing(false);
@@ -418,7 +455,8 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
 
-    public AsyncTask<Void, Void, Boolean> showMessagesTask(final List<HashMap<String, String>> list) {
+    public AsyncTask<Void, Void, Boolean> showMessagesTask(final List<HashMap<String, String>>
+                                                                   list) {
         return new AsyncTask<Void, Void, Boolean>() {
             Boolean isThereUnread = false;
             int counter = 0;
@@ -503,7 +541,8 @@ public class ConversationActivity extends AppCompatActivity {
                 super.onPostExecute(state);
                 mSwipeRefreshLayout.setRefreshing(false);
                 if (isThereUnread) {
-                    final Date updatedDate = messageInfos.get(messageInfos.size() - 1).getUpdatedDate();
+                    final Date updatedDate = messageInfos.get(messageInfos.size() - 1)
+                            .getUpdatedDate();
                     DbEntryService.updateMessagesToRead(updatedDate.getTime());
 
                     Thread allRead = new Thread(new Runnable() {
@@ -564,7 +603,8 @@ public class ConversationActivity extends AppCompatActivity {
                 super.onPostExecute(state);
                 sendMessage.setEnabled(true);
                 if (state) {
-                    DbEntryService.updateMessageStatus(first.getId(), ConversationMessageStatus.POST.getCode());
+                    DbEntryService.updateMessageStatus(first.getId(), ConversationMessageStatus
+                            .POST.getCode());
                     adapter.setStatus(first.getId(), ConversationMessageStatus.POST);
                 }
 
