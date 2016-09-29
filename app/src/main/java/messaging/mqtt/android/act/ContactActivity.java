@@ -4,6 +4,7 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -347,8 +348,8 @@ public class ContactActivity extends AppCompatActivity {
                 try {
                     Long time = System.currentTimeMillis();
 
-                    //topic = Build.ID + "___" + time;
-                    topic = "denemeamaclitopic";
+                    topic = Build.ID + "___" + time;
+                    //topic = "denemeamaclitopic";
                     ci.setRoomTopic(topic);
                     byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
                             .this, ci.getRoomTopic());
