@@ -71,7 +71,8 @@ public class MsgEncryptOperations {
         return publicKey.getEncoded();
     }
 
-    public static void createMsgKeySpec(Context context, String topic, String opbk, int isSent) throws Exception {
+    public static void createMsgKeySpec(Context context, String topic, String opbk, int isSent)
+            throws Exception {
         MsgEncryptOperations.context = context;
 
         if (opbk == null) {
@@ -79,12 +80,20 @@ public class MsgEncryptOperations {
         }
 
         HashMap<String, String> chatByTopic = DbEntryService.getChatByTopic(topic);
-        byte[] pbDeco = Base64.decode(chatByTopic.get(DbConstants.CHAT_PBK).getBytes(), Base64.DEFAULT);
-        byte[] prDeco = Base64.decode(chatByTopic.get(DbConstants.CHAT_PRK).getBytes(), Base64.DEFAULT);
+        if (chatByTopic.get(DbConstants.CHAT_PBK) == null || chatByTopic.get(DbConstants
+                .CHAT_PRK) == null) {
+            createSelfKeySpec(context, topic);
+        }
+
+        chatByTopic = DbEntryService.getChatByTopic(topic);
+        byte[] pbDeco = Base64.decode(chatByTopic.get(DbConstants.CHAT_PBK).getBytes(), Base64
+                .DEFAULT);
+        byte[] prDeco = Base64.decode(chatByTopic.get(DbConstants.CHAT_PRK).getBytes(), Base64
+                .DEFAULT);
 
         byte[] pbDcr = DbEncryptOperations.decrypt(pbDeco);
         byte[] prDcr = DbEncryptOperations.decrypt(prDeco);
-        byte[] otherEnc = opbk.getBytes();
+        byte[] otherEnc = Base64.decode(opbk.getBytes(), Base64.DEFAULT);
 
         createKeyPairGenerator();
 
@@ -100,7 +109,8 @@ public class MsgEncryptOperations {
 
         if (isSent == 0) {
             String pb = new String(pbDcr, "utf-8");
-            AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PUBLIC_KEY + pb).getBytes());
+            AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PUBLIC_KEY + pb)
+                    .getBytes());
         }
 
         AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PB_SENT).getBytes());
@@ -117,7 +127,8 @@ public class MsgEncryptOperations {
         Log.e(TAG, "New key taken. " + topic);
     }
 
- /*   private static void createKeyPairGenerator() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidParameterSpecException {
+ /*   private static void createKeyPairGenerator() throws NoSuchProviderException,
+ NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidParameterSpecException {
 
         // === Generates and inits a KeyPairGenerator ===
 
@@ -156,7 +167,9 @@ public class MsgEncryptOperations {
 
     }   */
 
-    private static void createKeyPairGenerator() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidParameterSpecException {
+    private static void createKeyPairGenerator() throws NoSuchProviderException,
+            NoSuchAlgorithmException, InvalidAlgorithmParameterException,
+            InvalidParameterSpecException {
 
         // === Generates and inits a KeyPairGenerator ===
 
@@ -164,13 +177,16 @@ public class MsgEncryptOperations {
         // own takes a lot of time and should be avoided
         // use ECDH or a newer Java (8) to support key generation with
         // higher strength
-        Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
+        if (kpg == null) {
+            Security.insertProviderAt(new org.spongycastle.jce.provider.BouncyCastleProvider(), 1);
 
-        kpg = KeyPairGenerator.getInstance("ECDH", "SC");
-        // ECDHGenParameterSpec spec = new ECGenParameterSpec("secp256r1");
-        // keyPairGenerator.initialize(spec, new SecureRandom());
-        ECNamedCurveParameterSpec parameterSpec = ECNamedCurveTable.getParameterSpec("secp256r1");
-        kpg.initialize(parameterSpec);
+            kpg = KeyPairGenerator.getInstance("ECDH", "SC");
+            // ECDHGenParameterSpec spec = new ECGenParameterSpec("secp256r1");
+            // keyPairGenerator.initialize(spec, new SecureRandom());
+            ECNamedCurveParameterSpec parameterSpec = ECNamedCurveTable.getParameterSpec
+                    ("secp256r1");
+            kpg.initialize(parameterSpec);
+        }
 
 
     }

@@ -87,10 +87,10 @@ public class MqttInit implements MqttCallback {
             if (!mqttClient.isConnected()) {
                 mqttClient.connect();
             }
-            
+
             MqttMessage m = new MqttMessage();
             m.setPayload(payload);
-            m.setQos(2);
+            m.setQos(0);
             m.setRetained(false);
             mqttClient.publish(topic, m);
             Log.d(TAG, "Mqtt client send message to: " + topic);
