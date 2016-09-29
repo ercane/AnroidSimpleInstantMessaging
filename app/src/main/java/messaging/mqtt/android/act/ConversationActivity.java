@@ -332,7 +332,7 @@ public class ConversationActivity extends AppCompatActivity {
         TextView tvError = (TextView) findViewById(R.id.tvError);
         RelativeLayout msgLayout = (RelativeLayout) findViewById(R.id.messageLayout);
         HashMap<String, String> chatRoom = DbEntryService.getChatByTopic(chatTopic);
-        if ("0".equals(chatRoom.get(DbConstants.CHAT_PBK_SENT))) {
+        if (chatRoom.get(DbConstants.CHAT_PBK_SENT)==null) {
             tvError.setText(R.string.key_not_created_error);
             tvError.setVisibility(View.VISIBLE);
             mSwipeRefreshLayout.setVisibility(View.GONE);

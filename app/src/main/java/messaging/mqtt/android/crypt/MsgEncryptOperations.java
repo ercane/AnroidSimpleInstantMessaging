@@ -109,8 +109,8 @@ public class MsgEncryptOperations {
 
         if (isSent == 0) {
             String pb = new String(pbDcr, "utf-8");
-            AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PUBLIC_KEY + pb)
-                    .getBytes());
+            String sent=(MqttConstants.MQTT_DH_PUBLIC_KEY + pb);
+            AsimService.getMqttInit().sendMessage(topic, Base64.encode(sent.getBytes(),Base64.DEFAULT));
         }
 
         AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PB_SENT).getBytes());
