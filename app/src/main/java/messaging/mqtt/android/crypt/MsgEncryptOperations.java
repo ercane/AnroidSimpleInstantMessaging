@@ -5,7 +5,6 @@ import android.content.res.Resources;
 import android.util.Base64;
 import android.util.Log;
 
-
 import org.spongycastle.jce.ECNamedCurveTable;
 import org.spongycastle.jce.spec.ECNamedCurveParameterSpec;
 
@@ -23,12 +22,17 @@ import java.security.PublicKey;
 import java.security.Security;
 import java.security.spec.EncodedKeySpec;
 import java.security.spec.InvalidParameterSpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
+import java.util.HashMap;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.spec.SecretKeySpec;
 
+import messaging.mqtt.android.database.DbConstants;
+import messaging.mqtt.android.database.DbEntryService;
+import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
 
 /**
@@ -43,65 +47,74 @@ public class MsgEncryptOperations {
     private static KeyPairGenerator kpg;
     private static Context context;
 
-    public static void createMsgKey(Context context) throws Exception {
+
+    public static byte[] createSelfKeySpec(Context context, String topic) throws Exception {
         MsgEncryptOperations.context = context;
+
         PrivateKey privateKey;
         PublicKey publicKey;
-        byte[] serverEncode = new byte[0];
+
         createKeyPairGenerator();
-        String publicStr;
-/*        if ("".equals(McysDeviceService.getPreferencesService().getPublicKey()) ||
-                "".equals(McysDeviceService.getPreferencesService().getPrivateKey())) {*/
+
         KeyPair kp1 = genKeyPair();
         publicKey = kp1.getPublic();
         privateKey = kp1.getPrivate();
 
-/*        } else {
-            publicStr = McysDeviceService.getPreferencesService().getPublicKey();
-            String privateStr = McysDeviceService.getPreferencesService().getPrivateKey();
 
-            KeyFactory keyFactory = KeyFactory.getInstance("DH");
-            EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(Base64.decode(privateStr.getBytes(), Base64.DEFAULT));
-            privateKey = keyFactory.generatePrivate(privateKeySpec);
+        byte[] pbEnc = DbEncryptOperations.encrypt(publicKey.getEncoded());
+        byte[] prEnc = DbEncryptOperations.encrypt(privateKey.getEncoded());
 
-            EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(Base64.decode(publicStr.getBytes(), Base64.DEFAULT));
-            publicKey = keyFactory.generatePublic(publicKeySpec);
-        }*/
+        String pbStr = Base64.encodeToString(pbEnc, Base64.DEFAULT);
+        String prStr = Base64.encodeToString(prEnc, Base64.DEFAULT);
 
-        //TODO create new key
-        // serverEncode = responseEntity.getBody();
+        DbEntryService.updateChatPbSpec(topic, pbStr, prStr);
+        return publicKey.getEncoded();
+    }
 
-/*        KeyFactory keyFactory = KeyFactory.getInstance("DH");
-        EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(serverEncode);
-        PublicKey serverKey = keyFactory.generatePublic(publicKeySpec);
+    public static void createMsgKeySpec(Context context, String topic, String opbk, int isSent) throws Exception {
+        MsgEncryptOperations.context = context;
 
-        byte[] secretKey = MsgEncryptOperations.agreeSecretKey(privateKey, serverKey, true);
+        if (opbk == null) {
+            throw new Exception("OPBK is empty");
+        }
 
-        String keyStr = Base64.encodeToString(secretKey, Base64.DEFAULT);
-        String encrypt = DbEncryptOperations.encrypt(keyStr);
-        McysDeviceService.getPreferencesService().setMsgKey(encrypt);*/
+        HashMap<String, String> chatByTopic = DbEntryService.getChatByTopic(topic);
+        byte[] pbDeco = Base64.decode(chatByTopic.get(DbConstants.CHAT_PBK).getBytes(), Base64.DEFAULT);
+        byte[] prDeco = Base64.decode(chatByTopic.get(DbConstants.CHAT_PRK).getBytes(), Base64.DEFAULT);
+
+        byte[] pbDcr = DbEncryptOperations.decrypt(pbDeco);
+        byte[] prDcr = DbEncryptOperations.decrypt(prDeco);
+        byte[] otherEnc = opbk.getBytes();
+
+        createKeyPairGenerator();
+
 
         KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "SC");
-        EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(serverEncode);
-        PublicKey serverKey = keyFactory.generatePublic(publicKeySpec);
+        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(prDcr);
+        EncodedKeySpec otherPublicKeySpec = new X509EncodedKeySpec(otherEnc);
 
-        byte[] secretKey = MsgEncryptOperations.agreeSecretKey(privateKey, serverKey, true);
+        PrivateKey privateKey = keyFactory.generatePrivate(privateKeySpec);
+        PublicKey otherKey = keyFactory.generatePublic(otherPublicKeySpec);
 
-        byte[] encrypt = DbEncryptOperations.encrypt(secretKey);
-        String keyStr = Base64.encodeToString(encrypt, Base64.DEFAULT);
-        AsimService.getPreferencesService().setMsgKey(keyStr);
-        AsimService.getPreferencesService().setMsgKeyExpiredTime(System.currentTimeMillis() +
-                1000 * 60 * 55);//55 minute
+        byte[] secretKey = MsgEncryptOperations.agreeSecretKey(privateKey, otherKey, true);
 
-        Log.e(TAG, "New key taken.");
+        if (isSent == 0) {
+            String pb = new String(pbDcr, "utf-8");
+            AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PUBLIC_KEY + pb).getBytes());
+        }
 
-        /*String cron="0 0 0/1 1/1 * ? *";
-        Intent targetIntent = new Intent();
-        targetIntent.putExtra(CronSchedulerReceiver.EXTRA_FIELD_CRON_EXPRESSION, cron);
-        targetIntent.putExtra(CronSchedulerReceiver.EXTRA_FIELD_DM_ID, ALARM_CODE);
-        targetIntent.putExtra(CronSchedulerReceiver.MONITOR_TYPE, ALARM_CODE);
+        AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PB_SENT).getBytes());
 
-        CronSchedulerReceiver.scheduleJob(MsgEncryptOperations.context, targetIntent, cron, ALARM_CODE);*/
+
+        byte[] opbEnc = DbEncryptOperations.encrypt(otherKey.getEncoded());
+        byte[] msgEnc = DbEncryptOperations.encrypt(secretKey);
+
+        String opbStr = Base64.encodeToString(opbEnc, Base64.DEFAULT);
+        String msgStr = Base64.encodeToString(msgEnc, Base64.DEFAULT);
+
+        DbEntryService.updateChatMsgSpec(topic, opbStr, msgStr);
+
+        Log.e(TAG, "New key taken. " + topic);
     }
 
  /*   private static void createKeyPairGenerator() throws NoSuchProviderException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, InvalidParameterSpecException {
@@ -187,8 +200,8 @@ public class MsgEncryptOperations {
         return kpg.generateKeyPair();
     }
 
-    public static byte[] encryptMsg(byte[] msg) throws Exception {
-        byte[] encrypt = encrypt(getKey(), msg);
+    public static byte[] encryptMsg(String topic, byte[] msg) throws Exception {
+        byte[] encrypt = encrypt(getKey(topic), msg);
         return encrypt;
     }
 
@@ -200,8 +213,8 @@ public class MsgEncryptOperations {
         return encrypted;
     }
 
-    public static byte[] decryptMsg(byte[] msg) throws Exception {
-        byte[] decrypt = decrypt(getKey(), msg);
+    public static byte[] decryptMsg(String topic, byte[] msg) throws Exception {
+        byte[] decrypt = decrypt(getKey(topic), msg);
         return decrypt;
     }
 
@@ -213,9 +226,16 @@ public class MsgEncryptOperations {
         return decrypted;
     }
 
-    private static byte[] getKey() throws Exception {
-        String msgKey = AsimService.getPreferencesService().getMsgKey();
-        byte[] msg = Base64.decode(msgKey.getBytes(), Base64.DEFAULT);
+    private static byte[] getKey(String topic) throws Exception {
+        HashMap<String, String> chatByTopic = DbEntryService.getChatByTopic(topic);
+
+        String sgkStr = chatByTopic.get(DbConstants.CHAT_MSGK);
+
+        if (sgkStr == null) {
+            throw new Exception("");
+        }
+
+        byte[] msg = Base64.decode(sgkStr.getBytes(), Base64.DEFAULT);
         byte[] key = DbEncryptOperations.decrypt(msg);
         return key;
     }

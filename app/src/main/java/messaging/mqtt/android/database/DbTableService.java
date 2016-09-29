@@ -19,6 +19,11 @@ public class DbTableService {
                     + DbConstants.CHAT_ID + " INTEGER PRIMARY KEY,"
                     + DbConstants.CHAT_NAME + " TEXT,"
                     + DbConstants.CHAT_TOPIC + " TEXT,"
+                    + DbConstants.CHAT_PBK_SENT + " INT,"
+                    + DbConstants.CHAT_PBK + " TEXT,"
+                    + DbConstants.CHAT_PRK + " TEXT,"
+                    + DbConstants.CHAT_OPBK + " TEXT,"
+                    + DbConstants.CHAT_MSGK + " TEXT,"
                     + DbConstants.CHAT_STATUS + " NUMERIC,"
                     + DbConstants.CHAT_UNREAD_MESSAGE + " NUMERIC)";
             db.execSQL(CREATE_MESSAGE_TABLE);

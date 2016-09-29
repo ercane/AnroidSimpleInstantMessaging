@@ -1,5 +1,7 @@
 package messaging.mqtt.android.mqtt;
 
+import android.os.Build;
+
 /**
  * Created by eercan on 21.03.2016.
  */
@@ -12,4 +14,8 @@ public class MqttConstants {
     public static final String MQTT_STATUS_INTENT = "ACTION_MQTT_STATUS_CHANGED";
     public static final String MQTT_STATUS_CODE = "com.dalelane.mqtt.STATUS_MSG";
     public static final String MQTT_PING_ACTION = "com.dalelane.mqtt.PING";
+    public static final String MQTT_SPLIT_PREFIX = "__-__-__";
+    public static final String MQTT_DH_PUBLIC_KEY = "DHPUBLIC" + MQTT_SPLIT_PREFIX;
+    public static final String MQTT_DH_PB_SENT = "DHSENT" + MQTT_SPLIT_PREFIX;
+    public static final String MQTT_SELF_PREFIX = Build.ID + MQTT_SPLIT_PREFIX;
 }

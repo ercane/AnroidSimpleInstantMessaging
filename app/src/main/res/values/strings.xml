@@ -1,4 +1,14 @@
 <resources>
     <string name="app_name">ASIM</string>
     <string name="title_activity_contacts">ContactsActivity</string>
+    <string name="main_create_pass_msg">Lütfen sadece rakamlardan oluşan en az 6 haneli bir şifre oluşturun.</string>
+    <string name="key_not_created_error">Anahtarlar oluşturulamadı. Yeniden deneyiniz.</string>
+    <string name="chat_room_name_msg">İsim giriniz.</string>
+    <string name="join_chat_room_topic_msg">Topic i yapıştırın.</string>
+    <string name="pass_null_error">Lütfen şifre belirleyiniz</string>
+    <string name="pass_same_error">Şifreler aynı değil</string>
+    <string name="pass_length_error">En az 6 haneli bir şifre belirleyiniz.</string>
+    <string name="pass_create_msg">Şifre oluşturuldu.</string>
+    <string name="pass_wrong_error">Şifre Yanlış</string>
+
 </resources>

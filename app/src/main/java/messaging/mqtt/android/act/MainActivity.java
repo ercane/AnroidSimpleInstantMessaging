@@ -3,9 +3,8 @@ package messaging.mqtt.android.act;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.text.LoginFilter;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -24,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout createPass, enterPass;
     private EditText newPass1, newPass2, pass;
     private Button createBtn, enterBtn;
+    private static int PASS_STRENTH = 6;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -56,11 +56,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (newPass1.getText() == null || newPass2.getText() == null) {
-                    Toast.makeText(MainActivity.this, "Lütfen şifre belirleyiniz", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, R.string.pass_null_error, Toast.LENGTH_LONG).show();
                 } else if (!newPass1.getText().toString().equals(newPass2.getText().toString())) {
-                    Toast.makeText(MainActivity.this, "Şifreler aynı değil", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, R.string.pass_same_error, Toast.LENGTH_LONG).show();
+                } else if (newPass1.getText().toString().length() < PASS_STRENTH) {
+                    Toast.makeText(MainActivity.this, R.string.pass_length_error, Toast.LENGTH_LONG).show();
                 } else {
-                    Toast.makeText(MainActivity.this, "Şifre oluşturuldu.", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, R.string.pass_create_msg, Toast.LENGTH_LONG).show();
                     savePass();
                     Intent contact = new Intent(MainActivity.this, ContactActivity.class);
                     startActivity(contact);
@@ -73,10 +75,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 if (pass.getText() == null) {
-                    Toast.makeText(MainActivity.this, "Lütfen şifre giriniz", Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, R.string.pass_null_error, Toast.LENGTH_LONG).show();
                 } else {
                     try {
-                        byte[] key = DbEncryptOperations.readKey();
                         byte[] decrypt = DbEncryptOperations.readPass();
                         String dec = new String(decrypt, "UTF-8");
 
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                             startActivity(contact);
                             finish();
                         } else {
-                            Toast.makeText(MainActivity.this, "Şifre Yanlış", Toast.LENGTH_LONG).show();
+                            Toast.makeText(MainActivity.this, R.string.pass_wrong_error, Toast.LENGTH_LONG).show();
                         }
 
                     } catch (Exception e) {

@@ -22,7 +22,7 @@ public class DbEntryService {
     /*Save operations
     *******************************
     */
-    public static void saveChat(ConversationInfo ci) {
+    public static Long saveChat(ConversationInfo ci) {
 
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
@@ -36,18 +36,23 @@ public class DbEntryService {
             count = mCount.getInt(0);
             mCount.close();
 
+            ContentValues values = new ContentValues();
+
             if (count == 0) {
-                ContentValues values = new ContentValues();
                 values.put(DbConstants.CHAT_UNREAD_MESSAGE, 0);
                 values.put(DbConstants.CHAT_NAME, ci.getRoomName());
+                values.put(DbConstants.CHAT_PBK_SENT, ci.getIsSent());
                 values.put(DbConstants.CHAT_TOPIC, ci.getRoomTopic());
                 values.put(DbConstants.CHAT_STATUS, ci.getStatus().getCode());
-                db.insert(DbConstants.CHAT_TABLE_NAME, null, values);
             }
+
+            Long id = db.insert(DbConstants.CHAT_TABLE_NAME, null, values);
             db.close(); //Database Bağlantısını kapattık*/
             Log.e(TAG, "Chat saved to database. Date: " + ci.getRoomName());
+            return id;
         } catch (Exception e) {
             Log.e(TAG, "Chat cannot be saved to database. Exception: " + e.getMessage());
+            return -1l;
         }
     }
 
@@ -99,10 +104,10 @@ public class DbEntryService {
         return contactList;
     }
 
-    private static HashMap<String, String> getChatById(String id) {
+    public static HashMap<String, String> getChatByTopic(String topic) {
         SQLiteDatabase db = sqoh.getReadableDatabase();
         String selectQuery = "SELECT * FROM " + DbConstants.CHAT_TABLE_NAME + " WHERE (" +
-                DbConstants.CHAT_ID + " = '" + id + "' )";
+                DbConstants.CHAT_TOPIC + " = '" + topic + "' )";
         Cursor cursor = db.rawQuery(selectQuery, null);
         HashMap<String, String> chat = new HashMap<String, String>();
 
@@ -118,7 +123,7 @@ public class DbEntryService {
         return chat;
     }
 
-    private static HashMap<String, String> getChatById(Long id) {
+    public static HashMap<String, String> getChatById(Long id) {
         SQLiteDatabase db = sqoh.getReadableDatabase();
         String selectQuery = "SELECT * FROM " + DbConstants.CHAT_TABLE_NAME + " WHERE (" +
                 DbConstants.CHAT_ID + " = " + id + " )";
@@ -372,6 +377,57 @@ public class DbEntryService {
         }
     }
 
+    public static void updateChatPbSpec(String topic, String pb, String pr) {
+        try {
+            SQLiteDatabase db = sqoh.getWritableDatabase();
+            String where = DbConstants.CHAT_TOPIC + " = '" + topic + "'";
+
+            ContentValues values = new ContentValues();
+            values.put(DbConstants.CHAT_PBK, pb);
+            values.put(DbConstants.CHAT_PRK, pr);
+            int update = db.update(DbConstants.CHAT_TABLE_NAME, values, where, null);
+            db.close();
+            Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status updated. ID: " + topic);
+        } catch (Exception e) {
+            Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status cannot be updated. ID: " + topic);
+
+        }
+    }
+
+    public static void updateChatMsgSpec(String topic, String opb, String msg) {
+        try {
+            SQLiteDatabase db = sqoh.getWritableDatabase();
+            String where = DbConstants.CHAT_TOPIC + " = '" + topic + "'";
+
+            ContentValues values = new ContentValues();
+            values.put(DbConstants.CHAT_MSGK, msg);
+            values.put(DbConstants.CHAT_OPBK, opb);
+            int update = db.update(DbConstants.CHAT_TABLE_NAME, values, where, null);
+            db.close();
+            Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status updated. ID: " + topic);
+        } catch (Exception e) {
+            Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status cannot be updated. ID: " + topic);
+
+        }
+    }
+
+
+    public static void updateChatPbStatus(String topic, int i) {
+        try {
+            SQLiteDatabase db = sqoh.getWritableDatabase();
+            String where = DbConstants.CHAT_TOPIC + " = '" + topic + "'";
+
+            ContentValues values = new ContentValues();
+            values.put(DbConstants.CHAT_PBK_SENT, i);
+            int update = db.update(DbConstants.CHAT_TABLE_NAME, values, where, null);
+            db.close();
+            Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status updated. ID: " + topic);
+        } catch (Exception e) {
+            Log.e(TAG, DbConstants.CHAT_TABLE_NAME + " status cannot be updated. ID: " + topic);
+
+        }
+    }
+
     public static int getUnreadNumber(Long id) {
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
@@ -417,5 +473,6 @@ public class DbEntryService {
 
         }
     }
+
 
 }

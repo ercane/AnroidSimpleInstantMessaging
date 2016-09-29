@@ -4,12 +4,12 @@ import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.os.AsyncTask;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 import android.view.ActionMode;
@@ -21,6 +21,8 @@ import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -107,11 +109,15 @@ public class ConversationActivity extends AppCompatActivity {
         return decyrpted;
     }
 
+    public static Handler getOnlineHandler() {
+        return onlineHandler;
+    }
+
     public static byte[] getMsgEncrypted(byte[] content) {
         String def = "CANNOT ENCRYPTED";
         byte[] encrypted = def.getBytes();
         try {
-            encrypted = MsgEncryptOperations.encryptMsg(content);
+            encrypted = MsgEncryptOperations.encryptMsg(chatTopic, content);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -122,7 +128,7 @@ public class ConversationActivity extends AppCompatActivity {
         String def = "CANNOT DECRYPT";
         byte[] decyrpted = def.getBytes();
         try {
-            decyrpted = MsgEncryptOperations.decryptMsg(content);
+            decyrpted = MsgEncryptOperations.decryptMsg(chatTopic, content);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -135,7 +141,6 @@ public class ConversationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_conversation);
 
         status = ActivityStatus.CREATED;
-
 
         chatId = getIntent().getLongExtra(ContactActivity.CONTACT_ID, -1);
         chatTopic = getIntent().getStringExtra(ContactActivity.CONTACT_TOPIC);
@@ -150,12 +155,10 @@ public class ConversationActivity extends AppCompatActivity {
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.activity_main_swipe_refresh_layout);
         listView = (ListView) findViewById(R.id.messageList);
         messageList = new ArrayList<ConversationMessageInfo>();
-        adapter = new MessageListAdapter(getApplicationContext(), R.layout.message_layout, messageList);
-        getMessages();
+
 
         listView.setTranscriptMode(ListView.TRANSCRIPT_MODE_NORMAL);
         listView.setStackFromBottom(true);
-        listView.setAdapter(adapter);
         listView.setDivider(null);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
         listView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
@@ -295,17 +298,6 @@ public class ConversationActivity extends AppCompatActivity {
                     Bundle data = msg.getData();
                     if (data.getSerializable(ADD_MESSAGE) != null) {
                         final ConversationMessageInfo cmi = (ConversationMessageInfo) data.getSerializable(ADD_MESSAGE);
-                        byte[] content = cmi.getContent();
-                        byte[] decyripted = getMsgDecrypted(content);
-                        cmi.setContent(decyripted);
-                        byte[] encrypted = getDbEncrypted(decyripted);
-                        DbEntryService.saveMessage(
-                                cmi.getChatId(),
-                                0,
-                                Base64.encodeToString(encrypted, Base64.DEFAULT),
-                                cmi.getUpdatedDate().getTime(),
-                                ConversationMessageStatus.READ.getCode());
-
                         cmi.setStatus(null);
                         if (status != null && (status == ActivityStatus.STOPPED ||
                                 status == ActivityStatus.DESTROYED ||
@@ -328,6 +320,24 @@ public class ConversationActivity extends AppCompatActivity {
                 }
             }
         };
+
+        TextView tvError = (TextView) findViewById(R.id.tvError);
+        RelativeLayout msgLayout = (RelativeLayout) findViewById(R.id.messageLayout);
+        HashMap<String, String> chatByTopic = DbEntryService.getChatByTopic(chatTopic);
+        if ("0".equals(chatByTopic.get(DbConstants.CHAT_PBK_SENT))) {
+            tvError.setText(R.string.key_not_created_error);
+            tvError.setVisibility(View.VISIBLE);
+            mSwipeRefreshLayout.setVisibility(View.GONE);
+            msgLayout.setEnabled(false);
+        } else {
+            tvError.setVisibility(View.GONE);
+            mSwipeRefreshLayout.setVisibility(View.VISIBLE);
+            msgLayout.setEnabled(true);
+            adapter = new MessageListAdapter(getApplicationContext(), R.layout.message_layout, messageList);
+            listView.setAdapter(adapter);
+            getMessages();
+        }
+
 
         checkWaitingList();
         Notification.clearNotification(this);

@@ -8,6 +8,7 @@ public class ConversationInfo {
     private String roomName;
     private String roomTopic;
     private Integer unreadMsgNumber;
+    private int isSent;
     private ConversationStatus status;
 
     public Long getId() {
@@ -40,6 +41,14 @@ public class ConversationInfo {
 
     public void setUnreadMsgNumber(Integer unreadMsgNumber) {
         this.unreadMsgNumber = unreadMsgNumber;
+    }
+
+    public int getIsSent() {
+        return isSent;
+    }
+
+    public void setIsSent(int isSent) {
+        this.isSent = isSent;
     }
 
     public ConversationStatus getStatus() {

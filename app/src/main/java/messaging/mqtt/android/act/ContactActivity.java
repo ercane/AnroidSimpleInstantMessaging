@@ -5,11 +5,12 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
@@ -29,16 +30,15 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.adapter.ContactListAdapter;
 import messaging.mqtt.android.common.model.ConversationInfo;
 import messaging.mqtt.android.common.ref.ConversationStatus;
+import messaging.mqtt.android.crypt.MsgEncryptOperations;
 import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
-import messaging.mqtt.android.mqtt.MqttInit;
+import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.MqttSubscribeTask;
 import messaging.mqtt.android.util.BoolFlag;
@@ -57,8 +57,14 @@ public class ContactActivity extends AppCompatActivity {
     private TextView addMsgField;
     private EditText addTopicField;
     private AlertDialog addDialog;
-    private List<ConversationInfo> contactInfos;
     private Button addContactBtn;
+    private ProgressBar joinProgressBar;
+    private TextView joinMsgField;
+    private EditText joinNameField;
+    private EditText joinTopicField;
+    private AlertDialog joinDialog;
+    private Button joinContactBtn;
+    private List<ConversationInfo> contactInfos;
     private ContactListAdapter mAdapter;
     private EditText contactName;
 
@@ -197,11 +203,12 @@ public class ContactActivity extends AppCompatActivity {
                             ci.setId(Long.parseLong(chat.get(DbConstants.CHAT_ID)));
                             ci.setRoomTopic(chat.get(DbConstants.CHAT_TOPIC));
                             ci.setRoomName(chat.get(DbConstants.CHAT_NAME));
+                            ci.setIsSent(Integer.parseInt(chat.get(DbConstants.CHAT_PBK_SENT)));
                             int count = DbEntryService.getUnreadNumber(ci.getId());
                             ci.setUnreadMsgNumber(count);
                             contactInfos.add(ci);
 
-                            MqttSubscribeTask subscribeTask = new MqttSubscribeTask(ci);
+                            MqttSubscribeTask subscribeTask = new MqttSubscribeTask(mAdapter, ci);
                             AsimService.getThreadPoolExecutor().submit(subscribeTask);
                         }
                         return true;
@@ -246,7 +253,7 @@ public class ContactActivity extends AppCompatActivity {
                 addContact();
                 break;
             case R.id.joinContact:
-                //joinContact();
+                joinContact();
                 break;
         }
         return true;
@@ -314,17 +321,6 @@ public class ContactActivity extends AppCompatActivity {
         addDialog.show();
     }
 
-    public boolean validateEmail(String email) {
-
-        Pattern pattern;
-        Matcher matcher;
-        String EMAIL_PATTERN = "^[_A-Za-z0-9-]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
-        pattern = Pattern.compile(EMAIL_PATTERN);
-        matcher = pattern.matcher(email);
-        return matcher.matches();
-
-    }
-
     public AsyncTask<Void, Void, Boolean> addContactTask(final String contactId) {
         return new AsyncTask<Void, Void, Boolean>() {
             ConversationInfo ci;
@@ -342,6 +338,7 @@ public class ContactActivity extends AppCompatActivity {
             protected Boolean doInBackground(Void... params) {
                 ci = new ConversationInfo();
                 ci.setRoomName(contactId);
+                ci.setIsSent(0);
                 try {
                     Long time = System.currentTimeMillis();
 
@@ -367,6 +364,25 @@ public class ContactActivity extends AppCompatActivity {
                     addMsgField.setTextColor(Color.GREEN);
                     addMsgField.setText("Oda oluşturuldu. Lütfen katılımcılara aşağıdaki kodu gönderin.");
                     addTopicField.setText(topic);
+                    addContactBtn.setOnClickListener(new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            addDialog.dismiss();
+                        }
+                    });
+
+                    try {
+                        byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(getApplicationContext(), ci.getRoomTopic());
+                        String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
+                        AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
+                    } catch (Exception e) {
+                        Log.e(TAG, e.getMessage());
+                    }
+
+                    ci.setId(DbEntryService.saveChat(ci));
+                    if (mAdapter != null) {
+                        mAdapter.add(ci);
+                    }
                     //addDialog.dismiss();
                 } else {
                     ci.setStatus(ConversationStatus.UNSUBSCRIBED);
@@ -374,9 +390,128 @@ public class ContactActivity extends AppCompatActivity {
                     addMsgField.setText("Oda oluşturulamadı!");
                     addDialog.dismiss();
                 }
-                DbEntryService.saveChat(ci);
-                mAdapter.clear();
-                fillContactInfo();
+
+
+            }
+        };
+    }
+
+
+    private void joinContact() {
+        LayoutInflater inflater;
+        View v;
+        inflater = getLayoutInflater();
+        v = inflater.inflate(R.layout.join_contact_layout, null);
+
+        joinProgressBar = (ProgressBar) v.findViewById(R.id.joinChatBar);
+        joinProgressBar.setVisibility(View.GONE);
+        joinMsgField = (TextView) v.findViewById(R.id.joinContactMsg);
+        joinMsgField.setVisibility(View.GONE);
+        joinNameField = (EditText) v.findViewById(R.id.name);
+        joinTopicField = (EditText) v.findViewById(R.id.topic);
+
+        AlertDialog.Builder builder;
+        builder = new AlertDialog.Builder(this);
+        builder.setView(v);
+        builder.setCancelable(true);
+        joinNameField = (EditText) v.findViewById(R.id.name);
+        joinNameField.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                joinContactBtn.setEnabled(true);
+            }
+
+            @Override
+            public void afterTextChanged(Editable editable) {
+
+            }
+        });
+
+        joinContactBtn = (Button) v.findViewById(R.id.btnJoinContact);
+
+        joinContactBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    joinMsgField.setText("");
+
+                    if (joinNameField.getText() == null || "".equals(joinNameField.getText().toString()) ||
+                            joinTopicField.getText() == null || "".equals(joinTopicField.getText().toString())) {
+                        throw new Exception("Name or topic field cannot be null");
+                    } else {
+                        joinContactTask(joinNameField.getText().toString(), joinTopicField.getText().toString()).execute();
+                    }
+                } catch (Exception e) {
+                    joinMsgField.setText(e.getMessage());
+                    joinMsgField.setTextColor(Color.RED);
+                }
+            }
+        });
+
+        joinDialog = builder.create();
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        joinDialog.show();
+    }
+
+    public AsyncTask<Void, Void, Boolean> joinContactTask(final String roomName, final String roomTopic) {
+        return new AsyncTask<Void, Void, Boolean>() {
+            ConversationInfo ci;
+
+            @Override
+            protected void onPreExecute() {
+                super.onPreExecute();
+                joinProgressBar.setVisibility(View.VISIBLE);
+                joinMsgField.clearComposingText();
+                joinContactBtn.setEnabled(false);
+            }
+
+            @Override
+            protected Boolean doInBackground(Void... params) {
+                ci = new ConversationInfo();
+                ci.setRoomName(roomName);
+                ci.getRoomTopic();
+                ci.setIsSent(0);
+                try {
+                    return AsimService.getMqttInit().subscribe(roomTopic);
+                } catch (Exception e) {
+                    return false;
+                }
+            }
+
+            @Override
+            protected void onPostExecute(Boolean state) {
+                super.onPostExecute(state);
+                if (state) {
+                    ci.setStatus(ConversationStatus.SUBSCRIBED);
+                    joinProgressBar.setVisibility(View.GONE);
+                    joinMsgField.setVisibility(View.VISIBLE);
+                    addDialog.dismiss();
+                    ci.setId(DbEntryService.saveChat(ci));
+
+                    if (mAdapter != null) {
+                        mAdapter.add(ci);
+                    }
+
+                    try {
+                        byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(getApplicationContext(), ci.getRoomTopic());
+                        String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
+                        AsimService.getMqttInit().sendMessage(ci.getRoomTopic(),
+                                (MqttConstants.MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
+                    } catch (Exception e) {
+                        Log.e(TAG, e.getMessage());
+                    }
+                } else {
+                    ci.setStatus(ConversationStatus.UNSUBSCRIBED);
+                    joinMsgField.setTextColor(Color.RED);
+                    joinMsgField.setText("Oda katılım gerçekleşmedi!");
+                    addDialog.dismiss();
+                }
+
 
             }
         };

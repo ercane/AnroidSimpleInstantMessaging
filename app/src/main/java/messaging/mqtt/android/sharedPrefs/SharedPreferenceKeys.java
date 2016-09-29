@@ -26,8 +26,8 @@ public class SharedPreferenceKeys {
     public static String PROPERTY_MSG_KEY = "MSG_KEY";
     public static String PROPERTY_MSG_KEY_EXPIRED_TIME = "MSG_KEY_EXPIRED";
     public static String PROPERTY_DB_KEY = "DB_KEY";
-    public static String PROPERTY_PUBLIC_KEY = "PUBLIC_KEY";
-    public static String PROPERTY_PROVATE_KEY = "PRIVATE_KEY";
+    public static String PROPERTY_PUBLIC_KEY = "PB";
+    public static String PROPERTY_PROVATE_KEY = "PR";
 
 
 }
