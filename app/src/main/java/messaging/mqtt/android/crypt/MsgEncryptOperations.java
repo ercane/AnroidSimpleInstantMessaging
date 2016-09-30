@@ -34,6 +34,7 @@ import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
 import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
+import messaging.mqtt.android.tasks.MqttSendMsgTask;
 
 /**
  * Created by eercan on 30.12.2015.
@@ -97,7 +98,6 @@ public class MsgEncryptOperations {
 
         createKeyPairGenerator();
 
-
         KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "SC");
         PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(prDcr);
         EncodedKeySpec otherPublicKeySpec = new X509EncodedKeySpec(otherEnc);
@@ -107,14 +107,6 @@ public class MsgEncryptOperations {
 
         byte[] secretKey = MsgEncryptOperations.agreeSecretKey(privateKey, otherKey, true);
 
-        if (isSent == 0) {
-            String pb = new String(pbDcr, "utf-8");
-            String sent=(MqttConstants.MQTT_DH_PUBLIC_KEY + pb);
-            AsimService.getMqttInit().sendMessage(topic, Base64.encode(sent.getBytes(),Base64.DEFAULT));
-        }
-
-        AsimService.getMqttInit().sendMessage(topic, (MqttConstants.MQTT_DH_PB_SENT).getBytes());
-
 
         byte[] opbEnc = DbEncryptOperations.encrypt(otherKey.getEncoded());
         byte[] msgEnc = DbEncryptOperations.encrypt(secretKey);
@@ -123,6 +115,17 @@ public class MsgEncryptOperations {
         String msgStr = Base64.encodeToString(msgEnc, Base64.DEFAULT);
 
         DbEntryService.updateChatMsgSpec(topic, opbStr, msgStr);
+
+        if (isSent == 0) {
+            String pb = new String(pbDcr, "utf-8");
+            String sent = (MqttConstants.MQTT_PB_SELF + pb);
+            MqttSendMsgTask sendPb = new MqttSendMsgTask(topic, Base64.encode(sent.getBytes(),
+                    Base64.DEFAULT));
+            AsimService.getSubSendExecutor().submit(sendPb);
+        }
+        MqttSendMsgTask task = new MqttSendMsgTask(topic, (MqttConstants.MQTT_PB_TAKEN)
+                .getBytes());
+        AsimService.getSubSendExecutor().submit(task);
 
         Log.e(TAG, "New key taken. " + topic);
     }

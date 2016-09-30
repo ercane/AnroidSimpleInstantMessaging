@@ -26,19 +26,51 @@ public class AsimService extends Service {
     private static final int KEEP_ALIVE_TIME = 1;
     private static final TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
     public static SharedPreferencesService preferencesService;
+    public static boolean running;
     private static Context context;
     private static Database db;
     private static MqttInit mqttInit;
-    public static boolean running;
     private static int corePoolSize = 1;
     private static int maximumPoolSize = 10;
     private static LinkedBlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
-    private static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
+    private static LinkedBlockingQueue<Runnable> workQueue2 = new LinkedBlockingQueue<>();
+    private static ThreadPoolExecutor subSendExecutor = new ThreadPoolExecutor(
             corePoolSize,       // Initial pool size
             maximumPoolSize,       // Max pool size
             KEEP_ALIVE_TIME,
             KEEP_ALIVE_TIME_UNIT,
             workQueue);
+
+    private static ThreadPoolExecutor processorExecutor = new ThreadPoolExecutor(
+            3,       // Initial pool size
+            100,       // Max pool size
+            KEEP_ALIVE_TIME,
+            KEEP_ALIVE_TIME_UNIT,
+            workQueue2);
+
+    public static SharedPreferences fillMitrilPreferences() {
+
+        return context.getSharedPreferences(MainActivity.class.getSimpleName(),
+                Context.MODE_PRIVATE);
+    }
+
+    public static SharedPreferencesService getPreferencesService() {
+        return preferencesService;
+    }
+
+    public static MqttInit getMqttInit() {
+        if (mqttInit == null)
+            mqttInit = new MqttInit(context, "tcp://iot.eclipse.org:1883", Build.ID);
+        return mqttInit;
+    }
+
+    public static ThreadPoolExecutor getSubSendExecutor() {
+        return subSendExecutor;
+    }
+
+    public static ThreadPoolExecutor getProcessorExecutor() {
+        return processorExecutor;
+    }
 
     @Nullable
     @Override
@@ -63,25 +95,5 @@ public class AsimService extends Service {
     private void createTables() {
         DbTableService.createChatTable();
         DbTableService.createMessageTable();
-    }
-
-    public static SharedPreferences fillMitrilPreferences() {
-
-        return context.getSharedPreferences(MainActivity.class.getSimpleName(),
-                Context.MODE_PRIVATE);
-    }
-
-    public static SharedPreferencesService getPreferencesService() {
-        return preferencesService;
-    }
-
-    public static MqttInit getMqttInit() {
-        if (mqttInit == null)
-            mqttInit = new MqttInit(context, "tcp://iot.eclipse.org:1883", Build.ID);
-        return mqttInit;
-    }
-
-    public static ThreadPoolExecutor getThreadPoolExecutor() {
-        return threadPoolExecutor;
     }
 }

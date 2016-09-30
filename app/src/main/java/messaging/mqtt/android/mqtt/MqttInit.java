@@ -17,8 +17,9 @@ public class MqttInit implements MqttCallback {
     private static final String TAG = MqttInit.class.getSimpleName();
     private static String broker;
     private static String clientId;
+    private static MqttPushCallback callback;
     private static MqttClient mqttClient;
-    private Context context;
+    private static Context context;
 
     public MqttInit(Context context, String broker, String clientId) {
         this.context = context;
@@ -44,11 +45,16 @@ public class MqttInit implements MqttCallback {
         MqttInit.clientId = clientId;
     }
 
+    public static MqttPushCallback getCallback() {
+        if (callback == null)
+            callback = new MqttPushCallback(context);
+        return callback;
+    }
+
     private synchronized boolean init() {
         try {
             mqttClient = new MqttClient(broker, clientId, new MemoryPersistence());
-            MqttPushCallback callback = new MqttPushCallback(context);
-            mqttClient.setCallback(callback);
+            mqttClient.setCallback(getCallback());
             mqttClient.connect();
             Log.d(TAG, "Mqtt Client connected");
             return true;
@@ -78,7 +84,7 @@ public class MqttInit implements MqttCallback {
         }
     }
 
-    public boolean sendMessage(String topic, byte[] payload) {
+    public synchronized boolean sendMessage(String topic, byte[] payload) {
         try {
             if (mqttClient == null) {
                 init();
@@ -90,7 +96,7 @@ public class MqttInit implements MqttCallback {
 
             MqttMessage m = new MqttMessage();
             m.setPayload(payload);
-            m.setQos(0);
+            m.setQos(2);
             m.setRetained(false);
             mqttClient.publish(topic, m);
             Log.d(TAG, "Mqtt client send message to: " + topic);

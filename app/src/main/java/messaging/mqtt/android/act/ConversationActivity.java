@@ -46,6 +46,7 @@ import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.ActivityStatus;
 import messaging.mqtt.android.tasks.DbDecyrptTask;
+import messaging.mqtt.android.tasks.MqttSendMsgTask;
 import messaging.mqtt.android.util.Notification;
 
 public class ConversationActivity extends AppCompatActivity {
@@ -332,7 +333,7 @@ public class ConversationActivity extends AppCompatActivity {
         TextView tvError = (TextView) findViewById(R.id.tvError);
         RelativeLayout msgLayout = (RelativeLayout) findViewById(R.id.messageLayout);
         HashMap<String, String> chatRoom = DbEntryService.getChatByTopic(chatTopic);
-        if (chatRoom.get(DbConstants.CHAT_PBK_SENT)==null) {
+        if ("0".equals(chatRoom.get(DbConstants.CHAT_PBK_SENT))) {
             tvError.setText(R.string.key_not_created_error);
             tvError.setVisibility(View.VISIBLE);
             mSwipeRefreshLayout.setVisibility(View.GONE);
@@ -353,8 +354,9 @@ public class ConversationActivity extends AppCompatActivity {
                     pbStr = Base64.encodeToString(pubkey, Base64.DEFAULT);
                 }
 
-                AsimService.getMqttInit().sendMessage(chatTopic, (MqttConstants
-                        .MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
+                MqttSendMsgTask task = new MqttSendMsgTask(chatTopic, (MqttConstants
+                        .MQTT_PB_SELF + pbStr).getBytes());
+                AsimService.getSubSendExecutor().submit(task);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -595,7 +597,10 @@ public class ConversationActivity extends AppCompatActivity {
             @Override
             protected Boolean doInBackground(Void... params) {
                 byte[] content = first.getContent();
-                return AsimService.getMqttInit().sendMessage(chatTopic, getMsgEncrypted(content));
+                byte[] msgEncrypted = getMsgEncrypted(content);
+                String encoded = Base64.encodeToString(msgEncrypted, Base64.DEFAULT);
+                String message = MqttConstants.MQTT_MSG_SENT + encoded;
+                return AsimService.getMqttInit().sendMessage(chatTopic, message.getBytes());
             }
 
             @Override

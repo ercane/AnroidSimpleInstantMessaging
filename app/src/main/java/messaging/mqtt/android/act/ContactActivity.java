@@ -4,7 +4,6 @@ import android.app.ProgressDialog;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -40,6 +39,7 @@ import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
 import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
+import messaging.mqtt.android.tasks.MqttSendMsgTask;
 import messaging.mqtt.android.tasks.MqttSubscribeTask;
 import messaging.mqtt.android.util.BoolFlag;
 import messaging.mqtt.android.util.Notification;
@@ -214,7 +214,7 @@ public class ContactActivity extends AppCompatActivity {
                             contactInfos.add(ci);
 
                             MqttSubscribeTask subscribeTask = new MqttSubscribeTask(mAdapter, ci);
-                            AsimService.getThreadPoolExecutor().submit(subscribeTask);
+                            AsimService.getSubSendExecutor().submit(subscribeTask);
                         }
                         return true;
                     } catch (Exception e) {
@@ -338,26 +338,26 @@ public class ContactActivity extends AppCompatActivity {
                 addProgressBar.setVisibility(View.VISIBLE);
                 addMsgField.clearComposingText();
                 addContactBtn.setEnabled(true);
+                ci = new ConversationInfo();
+                ci.setRoomName(contactId);
+                ci.setIsSent(0);
+
+                Long time = System.currentTimeMillis();
+
+                //topic = Build.ID + "___" + time;
+                topic = "denemeamaclitop";
+                ci.setRoomTopic(topic);
+                ci.setId(DbEntryService.saveChat(ci));
             }
 
             @Override
             protected Boolean doInBackground(Void... params) {
-                ci = new ConversationInfo();
-                ci.setRoomName(contactId);
-                ci.setIsSent(0);
-                try {
-                    Long time = System.currentTimeMillis();
 
-                    topic = Build.ID + "___" + time;
-                    //topic = "denemeamaclitopic";
-                    ci.setRoomTopic(topic);
+                try {
+
                     byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
                             .this, ci.getRoomTopic());
-                    String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
                     boolean state = AsimService.getMqttInit().subscribe(topic);
-                    if (state)
-                        AsimService.getMqttInit().sendMessage(topic, (MqttConstants
-                                .MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
                     return state;
                 } catch (Exception e) {
                     return false;
@@ -385,7 +385,6 @@ public class ContactActivity extends AppCompatActivity {
                         }
                     });
 
-                    ci.setId(DbEntryService.saveChat(ci));
                     if (mAdapter != null) {
                         mAdapter.add(ci);
                     }
@@ -478,23 +477,25 @@ public class ContactActivity extends AppCompatActivity {
                 joinProgressBar.setVisibility(View.VISIBLE);
                 joinMsgField.clearComposingText();
                 joinContactBtn.setEnabled(false);
+                ci = new ConversationInfo();
+                ci.setRoomName(roomName);
+                ci.setRoomTopic(roomTopic);
+                ci.setIsSent(0);
+                ci.setId(DbEntryService.saveChat(ci));
             }
 
             @Override
             protected Boolean doInBackground(Void... params) {
                 try {
-                    ci = new ConversationInfo();
-                    ci.setRoomName(roomName);
-                    ci.setRoomTopic(roomTopic);
-                    ci.setIsSent(0);
-
                     byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
                             .this, ci.getRoomTopic());
                     String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
                     boolean state = AsimService.getMqttInit().subscribe(roomTopic);
-                    if (state)
-                        AsimService.getMqttInit().sendMessage(roomTopic, (MqttConstants
-                                .MQTT_DH_PUBLIC_KEY + pbStr).getBytes());
+                    if (state) {
+                        MqttSendMsgTask task = new MqttSendMsgTask(roomTopic, (MqttConstants
+                                .MQTT_PB_SELF + pbStr).getBytes());
+                        AsimService.getSubSendExecutor().submit(task);
+                    }
                     return state;
                 } catch (Exception e) {
                     return false;
@@ -509,7 +510,6 @@ public class ContactActivity extends AppCompatActivity {
                     joinProgressBar.setVisibility(View.GONE);
                     joinMsgField.setVisibility(View.VISIBLE);
                     joinDialog.dismiss();
-                    ci.setId(DbEntryService.saveChat(ci));
 
                     if (mAdapter != null) {
                         mAdapter.add(ci);

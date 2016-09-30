@@ -1,7 +1,6 @@
 package messaging.mqtt.android.mqtt;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Message;
 import android.util.Base64;
@@ -11,15 +10,13 @@ import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-import java.util.HashMap;
-
 import messaging.mqtt.android.act.ConversationActivity;
 import messaging.mqtt.android.common.model.ConversationMessageInfo;
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
 import messaging.mqtt.android.crypt.DbEncryptOperations;
-import messaging.mqtt.android.crypt.MsgEncryptOperations;
-import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
+import messaging.mqtt.android.service.AsimService;
+import messaging.mqtt.android.tasks.MsgProcessorTask;
 
 /**
  * Created by eercan on 28.03.2016.
@@ -40,28 +37,15 @@ public class MqttPushCallback implements MqttCallback {
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-        Log.d(TAG, "Message arrived");
-        byte[] payload = message.getPayload();
-        String payloadMsg = new String(payload, "UTF-8");
-        HashMap<String, String> chatByTopic = DbEntryService.getChatByTopic(topic);
 
-        if (payloadMsg.startsWith(MqttConstants.MQTT_DH_PUBLIC_SELF_KEY)) {
-            String[] split = payloadMsg.split(MqttConstants.MQTT_SPLIT_PREFIX);
-            if (!Build.ID.equals(split[1]))
-                MsgEncryptOperations.createMsgKeySpec(context, topic, split[2],
-                        Integer.parseInt(chatByTopic.get(DbConstants.CHAT_PBK_SENT)));
-        } else if (payloadMsg.startsWith(MqttConstants.MQTT_DH_PB_SENT)) {
-            DbEntryService.updateChatPbStatus(topic, 1);
-        } else {
-            byte[] decryptMsg = MsgEncryptOperations.decryptMsg(topic, payload);
-            String msg = new String(decryptMsg, "UTF-8");
-
-            if (!msg.startsWith(MqttConstants.MQTT_SELF_PREFIX)) {
-                String[] split = msg.split(MqttConstants.MQTT_SPLIT_PREFIX);
-                saveMessage(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), split[1]);
-            }
-
+        try {
+            MsgProcessorTask task = new MsgProcessorTask(context, topic, message.getPayload());
+            AsimService.getProcessorExecutor().submit(task);
+        } catch (Exception e) {
+            Log.e(TAG, e.getMessage());
         }
+
+        AsimService.getMqttInit().subscribe(topic);
     }
 
     private void saveMessage(Long chatId, String msg) throws Exception {
