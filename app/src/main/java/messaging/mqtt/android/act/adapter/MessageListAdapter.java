@@ -17,7 +17,6 @@ import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import java.io.UnsupportedEncodingException;
 import java.security.InvalidParameterException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -28,6 +27,8 @@ import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.ConversationActivity;
 import messaging.mqtt.android.common.model.ConversationMessageInfo;
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
+import messaging.mqtt.android.common.ref.ConversationMessageType;
+import messaging.mqtt.android.mqtt.MqttConstants;
 
 
 public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
@@ -149,15 +150,16 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
             decyrptBar.setVisibility(View.GONE);
             message.setVisibility(View.VISIBLE);
             try {
-                message.setText(new String(coment.getContent(), "UTF-8"));
-            } catch (UnsupportedEncodingException e) {
+                String msg = new String(coment.getContent(), "UTF-8");
+                message.setText(msg.split(MqttConstants.MQTT_SPLIT_PREFIX)[2]);
+            } catch (Exception e) {
                 message.setText(new String(coment.getContent()));
             }
         } else {
             decyrptBar.setVisibility(View.VISIBLE);
             message.setVisibility(View.GONE);
         }
-        messageHour.setText(hourFormat.format(coment.getUpdatedDate()));
+        messageHour.setText(hourFormat.format(coment.getSentReceiveDate()));
 
         Drawable incoming;
 
@@ -179,7 +181,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
         colorFilter = getColorFilter("#DCF8C6");
         outgoing.setColorFilter(colorFilter);
 
-        String date = dateFormat.format(coment.getUpdatedDate());
+        String date = dateFormat.format(coment.getSentReceiveDate());
         if (dateList.size() != 0) {
             if (dateList.get(date) == coment.getId()) {
                 messageDate.setVisibility(View.VISIBLE);
@@ -189,7 +191,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
             }
         }
 
-        if (!coment.getChatId().equals(ConversationActivity.chatId)) {
+        if (coment.getType() == ConversationMessageType.RECEIVED) {
             wrapper.setBackground(incoming);
             messageLayout.setGravity(Gravity.LEFT);
             messageLayout.setPadding(10, 5, 50, 5);

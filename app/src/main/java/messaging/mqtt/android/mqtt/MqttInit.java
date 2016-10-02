@@ -1,20 +1,19 @@
 package messaging.mqtt.android.mqtt;
 
 import android.content.Context;
-import android.content.Intent;
 import android.util.Log;
 
-import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.MqttCallback;
 import org.eclipse.paho.client.mqttv3.MqttClient;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
 
 
-public class MqttInit implements MqttCallback {
+public class MqttInit {
 
     private static final String TAG = MqttInit.class.getSimpleName();
+    private static Integer KEEP_ALIVE = 120;
     private static String broker;
     private static String clientId;
     private static MqttPushCallback callback;
@@ -51,11 +50,15 @@ public class MqttInit implements MqttCallback {
         return callback;
     }
 
-    private synchronized boolean init() {
+
+    private static synchronized boolean init() {
         try {
             mqttClient = new MqttClient(broker, clientId, new MemoryPersistence());
             mqttClient.setCallback(getCallback());
-            mqttClient.connect();
+            MqttConnectOptions options = new MqttConnectOptions();
+            options.setKeepAliveInterval(KEEP_ALIVE);
+            options.setCleanSession(false);
+            mqttClient.connect(options);
             Log.d(TAG, "Mqtt Client connected");
             return true;
         } catch (MqttException e) {
@@ -64,11 +67,13 @@ public class MqttInit implements MqttCallback {
         }
     }
 
-    public boolean subscribe(String topic) {
+    public static boolean subscribe(String topic) {
         try {
 
             if (mqttClient == null) {
-                init();
+                if (!init()) {
+                    throw new MqttException(new Exception("MqqtClient init failed"));
+                }
             }
 
             if (!mqttClient.isConnected()) {
@@ -84,7 +89,7 @@ public class MqttInit implements MqttCallback {
         }
     }
 
-    public synchronized boolean sendMessage(String topic, byte[] payload) {
+    public static synchronized boolean sendMessage(String topic, byte[] payload) {
         try {
             if (mqttClient == null) {
                 init();
@@ -106,25 +111,4 @@ public class MqttInit implements MqttCallback {
             return false;
         }
     }
-
-    @Override
-    public void connectionLost(Throwable cause) {
-
-    }
-
-    @Override
-    public void messageArrived(String topic, MqttMessage message) throws Exception {
-        Intent broadcastIntent = new Intent();
-        broadcastIntent.setAction(MqttConstants.MQTT_MSG_RECEIVED_INTENT);
-        broadcastIntent.putExtra(MqttConstants.MQTT_MSG_RECEIVED_TOPIC, topic);
-        broadcastIntent.putExtra(MqttConstants.MQTT_MSG_RECEIVED_MSG, new String(message
-                .getPayload()));
-        context.sendBroadcast(broadcastIntent);
-    }
-
-    @Override
-    public void deliveryComplete(IMqttDeliveryToken token) {
-
-    }
-
 }

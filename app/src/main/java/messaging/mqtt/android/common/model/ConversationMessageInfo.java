@@ -8,12 +8,16 @@
 package messaging.mqtt.android.common.model;
 
 
+import java.util.Date;
+
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
+import messaging.mqtt.android.common.ref.ConversationMessageType;
 
 
 public class ConversationMessageInfo extends MarkedInfo {
+    public Date sentReceiveDate;
     private Long chatId;
-    private String senderId;
+    private ConversationMessageType type;
     private ConversationMessageStatus status;
     private byte[] content;
 
@@ -25,12 +29,12 @@ public class ConversationMessageInfo extends MarkedInfo {
         this.chatId = chatId;
     }
 
-    public String getSenderId() {
-        return senderId;
+    public ConversationMessageType getType() {
+        return type;
     }
 
-    public void setSenderId(String senderId) {
-        this.senderId = senderId;
+    public void setType(ConversationMessageType type) {
+        this.type = type;
     }
 
     public ConversationMessageStatus getStatus() {
@@ -47,5 +51,13 @@ public class ConversationMessageInfo extends MarkedInfo {
 
     public void setContent(byte[] content) {
         this.content = content;
+    }
+
+    public Date getSentReceiveDate() {
+        return sentReceiveDate;
+    }
+
+    public void setSentReceiveDate(Date sentReceiveDate) {
+        this.sentReceiveDate = sentReceiveDate;
     }
 }

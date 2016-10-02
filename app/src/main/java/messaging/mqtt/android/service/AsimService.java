@@ -30,8 +30,8 @@ public class AsimService extends Service {
     private static Context context;
     private static Database db;
     private static MqttInit mqttInit;
-    private static int corePoolSize = 1;
-    private static int maximumPoolSize = 10;
+    private static int corePoolSize = 5;
+    private static int maximumPoolSize = 15;
     private static LinkedBlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
     private static LinkedBlockingQueue<Runnable> workQueue2 = new LinkedBlockingQueue<>();
     private static ThreadPoolExecutor subSendExecutor = new ThreadPoolExecutor(
@@ -42,7 +42,7 @@ public class AsimService extends Service {
             workQueue);
 
     private static ThreadPoolExecutor processorExecutor = new ThreadPoolExecutor(
-            3,       // Initial pool size
+            1,       // Initial pool size
             100,       // Max pool size
             KEEP_ALIVE_TIME,
             KEEP_ALIVE_TIME_UNIT,

@@ -116,14 +116,13 @@ public class MsgEncryptOperations {
 
         DbEntryService.updateChatMsgSpec(topic, opbStr, msgStr);
 
-        if (isSent == 0) {
+/*        if (isSent == 0) {
             String pb = new String(pbDcr, "utf-8");
             String sent = (MqttConstants.MQTT_PB_SELF + pb);
-            MqttSendMsgTask sendPb = new MqttSendMsgTask(topic, Base64.encode(sent.getBytes(),
-                    Base64.DEFAULT));
+            MqttSendMsgTask sendPb = new MqttSendMsgTask(topic, sent.getBytes());
             AsimService.getSubSendExecutor().submit(sendPb);
-        }
-        MqttSendMsgTask task = new MqttSendMsgTask(topic, (MqttConstants.MQTT_PB_TAKEN)
+        }*/
+        MqttSendMsgTask task = new MqttSendMsgTask(topic, (MqttConstants.MQTT_PB_TAKEN_SELF)
                 .getBytes());
         AsimService.getSubSendExecutor().submit(task);
 

@@ -1,9 +1,11 @@
 package messaging.mqtt.android.act;
 
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -34,13 +36,11 @@ import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.adapter.ContactListAdapter;
 import messaging.mqtt.android.common.model.ConversationInfo;
 import messaging.mqtt.android.common.ref.ConversationStatus;
-import messaging.mqtt.android.crypt.MsgEncryptOperations;
 import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
-import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
-import messaging.mqtt.android.tasks.MqttSendMsgTask;
 import messaging.mqtt.android.tasks.MqttSubscribeTask;
+import messaging.mqtt.android.tasks.PbKeyProcessorTask;
 import messaging.mqtt.android.util.BoolFlag;
 import messaging.mqtt.android.util.Notification;
 
@@ -93,16 +93,13 @@ public class ContactActivity extends AppCompatActivity {
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean
                     checked) {
                 final int checkedCount = listView.getCheckedItemCount();
-                // Set the CAB title according to total checked items
                 mode.setTitle(checkedCount + " Selected");
-                // Calls toggleSelection method from ListViewAdapter Class
                 mAdapter.toggleSelection(position);
             }
 
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                 mode.getMenuInflater().inflate(R.menu.contact_contextual, menu);
-
                 return true;
             }
 
@@ -138,6 +135,30 @@ public class ContactActivity extends AppCompatActivity {
                             }
                         }
                         // Close CAB
+                        mode.finish();
+                        return true;
+                    case R.id.item_share:
+                        selected = mAdapter.getSelectedIds();
+                        String shareMsg = "";
+                        for (int i = (selected.size() - 1); i >= 0; i--) {
+                            if (selected.valueAt(i)) {
+                                try {
+                                    ConversationInfo mAdapterItem = (ConversationInfo) mAdapter
+                                            .getItem(selected.keyAt(i));
+                                    shareMsg += mAdapterItem.getRoomTopic() + "\n";
+                                } catch (Exception e) {
+                                    Toast.makeText(ContactActivity.this, "Conversation with " +
+                                            "cannot be shared. " + e.getMessage(), Toast
+                                            .LENGTH_LONG);
+                                }
+                            }
+                            mAdapter.toggleSelection(i);
+                        }
+                        Intent sharingIntent = new Intent(android.content.Intent.ACTION_SEND);
+                        sharingIntent.setType("text/plain");
+                        sharingIntent.putExtra(android.content.Intent.EXTRA_SUBJECT, "Chat Kodu");
+                        sharingIntent.putExtra(android.content.Intent.EXTRA_TEXT, shareMsg);
+                        startActivity(Intent.createChooser(sharingIntent, "Paylaş"));
                         mode.finish();
                         return true;
                     default:
@@ -264,6 +285,29 @@ public class ContactActivity extends AppCompatActivity {
         return true;
     }
 
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        android.app.AlertDialog.Builder alert = new android.app.AlertDialog.Builder(this);
+        alert.setTitle("DİKKAT");
+        alert.setMessage(R.string.back_press_alert);
+        alert.setPositiveButton("EVET", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                finish();
+            }
+        });
+
+        alert.setNegativeButton("HAYIR", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+            }
+        });
+
+        alert.create().show();
+
+    }
 
     private void addContact() {
         LayoutInflater inflater;
@@ -344,21 +388,27 @@ public class ContactActivity extends AppCompatActivity {
 
                 Long time = System.currentTimeMillis();
 
-                //topic = Build.ID + "___" + time;
-                topic = "denemeamaclitop";
+                topic = Base64.encodeToString((Build.ID + "___" + time).getBytes(), Base64.DEFAULT);
+                //topic = "denemeamaclitop2";
                 ci.setRoomTopic(topic);
                 ci.setId(DbEntryService.saveChat(ci));
+
+                PbKeyProcessorTask keyTask = new PbKeyProcessorTask(ContactActivity
+                        .this, ci.getRoomTopic(), 0);
+                MqttSubscribeTask subscribeTask = new MqttSubscribeTask(mAdapter, ci);
+                AsimService.getProcessorExecutor().submit(keyTask);
+                AsimService.getSubSendExecutor().submit(subscribeTask);
             }
 
             @Override
             protected Boolean doInBackground(Void... params) {
 
                 try {
-
-                    byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
-                            .this, ci.getRoomTopic());
-                    boolean state = AsimService.getMqttInit().subscribe(topic);
-                    return state;
+                    // byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
+                    //         .this, ci.getRoomTopic());
+                    //     boolean state = AsimService.getMqttInit().subscribe(topic);
+                    //   return state;
+                    return true;
                 } catch (Exception e) {
                     return false;
                 }
@@ -482,21 +532,26 @@ public class ContactActivity extends AppCompatActivity {
                 ci.setRoomTopic(roomTopic);
                 ci.setIsSent(0);
                 ci.setId(DbEntryService.saveChat(ci));
+
+                PbKeyProcessorTask keyTask = new PbKeyProcessorTask(ContactActivity
+                        .this, ci.getRoomTopic(), 0);
+                AsimService.getProcessorExecutor().submit(keyTask);
             }
 
             @Override
             protected Boolean doInBackground(Void... params) {
                 try {
-                    byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
-                            .this, ci.getRoomTopic());
-                    String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
+                    // byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
+                    //         .this, ci.getRoomTopic());
+                    /*String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
                     boolean state = AsimService.getMqttInit().subscribe(roomTopic);
                     if (state) {
                         MqttSendMsgTask task = new MqttSendMsgTask(roomTopic, (MqttConstants
                                 .MQTT_PB_SELF + pbStr).getBytes());
                         AsimService.getSubSendExecutor().submit(task);
                     }
-                    return state;
+                    return state;*/
+                    return true;
                 } catch (Exception e) {
                     return false;
                 }

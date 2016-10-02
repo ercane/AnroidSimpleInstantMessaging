@@ -19,6 +19,12 @@ public class MqttConstants {
 
     public static final String MQTT_PB = "PB" + MQTT_SPLIT_PREFIX;
     public static final String MQTT_PB_SELF = MQTT_PB + MQTT_SELF_PREFIX;
-    public static final String MQTT_PB_TAKEN = "PBTAKEN" + MQTT_SPLIT_PREFIX + MQTT_SELF_PREFIX;
+    public static final String MQTT_PB_TAKEN = "PBTAKEN" + MQTT_SPLIT_PREFIX;
+    public static final String MQTT_PB_TAKEN_SELF = "PBTAKEN" + MQTT_SPLIT_PREFIX + MQTT_SELF_PREFIX;
+    public static final String MQTT_SENT = "SENT" + MQTT_SPLIT_PREFIX;
     public static final String MQTT_MSG_SENT = "SENT" + MQTT_SPLIT_PREFIX + MQTT_SELF_PREFIX;
+    public static final String MQTT_RECEIVE_ALL = "RECEIVE" + MQTT_SPLIT_PREFIX;
+    public static final String MQTT_RECEIVE_ALL_SELF = MQTT_RECEIVE_ALL + MQTT_SELF_PREFIX;
+    public static final String MQTT_READ_ALL = "READ" + MQTT_SPLIT_PREFIX;
+    public static final String MQTT_READ_ALL_SELF = MQTT_READ_ALL + MQTT_SELF_PREFIX;
 }

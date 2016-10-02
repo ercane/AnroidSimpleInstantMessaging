@@ -13,6 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Base64;
 import android.util.Log;
 import android.view.ActionMode;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -38,6 +39,7 @@ import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.adapter.MessageListAdapter;
 import messaging.mqtt.android.common.model.ConversationMessageInfo;
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
+import messaging.mqtt.android.common.ref.ConversationMessageType;
 import messaging.mqtt.android.crypt.DbEncryptOperations;
 import messaging.mqtt.android.crypt.MsgEncryptOperations;
 import messaging.mqtt.android.database.DbConstants;
@@ -63,11 +65,11 @@ public class ConversationActivity extends AppCompatActivity {
             Comparator<ConversationMessageInfo>() {
                 @Override
                 public int compare(ConversationMessageInfo first, ConversationMessageInfo second) {
-                    return first.getUpdatedDate().compareTo(second.getUpdatedDate());
+                    return first.getSentReceiveDate().compareTo(second.getSentReceiveDate());
                 }
             };
     private static Integer SHOW_LIMIT = 20;
-    private static Handler onlineHandler;
+    private static Handler addHandler;
     private static Handler offlineHandler;
     private static String TAG = ConversationActivity.class.getSimpleName();
     private static List<Long> waitingReadList = new ArrayList<>();
@@ -80,8 +82,8 @@ public class ConversationActivity extends AppCompatActivity {
             KEEP_ALIVE_TIME,
             KEEP_ALIVE_TIME_UNIT,
             workQueue);
+    private static MessageListAdapter adapter;
     public Long messageLimitTime = System.currentTimeMillis();
-    private MessageListAdapter adapter;
     private ListView listView;
     private EditText messageText;
     private Button sendMessage;
@@ -112,8 +114,42 @@ public class ConversationActivity extends AppCompatActivity {
         return decyrpted;
     }
 
-    public static Handler getOnlineHandler() {
-        return onlineHandler;
+    public static Handler getAddHandler() {
+        if (addHandler == null) {
+            addHandler = new Handler(Looper.getMainLooper()) {
+                @Override
+                public void handleMessage(Message msg) {
+                    try {
+                        Bundle data = msg.getData();
+                        if (data.getSerializable(ADD_MESSAGE) != null) {
+                            final ConversationMessageInfo cmi = (ConversationMessageInfo) data
+                                    .getSerializable(ADD_MESSAGE);
+
+                            if (adapter != null) {
+                                adapter.getDecyrptMap().put(cmi.getId(), true);
+                                adapter.add(cmi);
+                            }
+
+                            MqttSendMsgTask task = new MqttSendMsgTask(chatTopic, MqttConstants.MQTT_READ_ALL_SELF.getBytes());
+                            AsimService.getSubSendExecutor().submit(task);
+                        } else if (data.getSerializable(RECEIVE_MESSAGE) != null) {
+                            long id = (long) data.getSerializable(RECEIVE_MESSAGE);
+                            DbEntryService.updateMessagesToReceive(id);
+                            if (adapter != null)
+                                adapter.setStatusToReceive();
+                        } else if (data.getSerializable(READ_MESSAGE) != null) {
+                            long id = (long) data.getSerializable(READ_MESSAGE);
+                            DbEntryService.updateSentMessagesToRead(id);
+                            if (adapter != null)
+                                adapter.setStatusToRead();
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, e.getMessage() + "");
+                    }
+                }
+            };
+        }
+        return addHandler;
     }
 
     public static byte[] getMsgEncrypted(byte[] content) {
@@ -137,6 +173,7 @@ public class ConversationActivity extends AppCompatActivity {
         }
         return decyrpted;
     }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -276,18 +313,20 @@ public class ConversationActivity extends AppCompatActivity {
                     return;
                 }
 
-                final String content = messageText.getText().toString();
+                final String content = MqttConstants.MQTT_MSG_SENT + messageText.getText().toString();
                 ConversationMessageInfo cmi = new ConversationMessageInfo();
                 cmi.setContent(content.getBytes());
                 cmi.setChatId(chatId);
                 cmi.setStatus(ConversationMessageStatus.CREATED);
+                cmi.setType(ConversationMessageType.SENT);
 
                 Date date = new Date(System.currentTimeMillis());
                 cmi.setUpdatedDate(date);
+                cmi.setSentReceiveDate(date);
                 byte[] encrypted = getDbEncrypted(cmi.getContent());
                 Long id = DbEntryService.saveMessage(
                         chatId,
-                        1,
+                        ConversationMessageType.SENT,
                         Base64.encodeToString(encrypted, Base64.DEFAULT),
                         cmi.getUpdatedDate().getTime(),
                         cmi.getStatus().getCode());
@@ -299,41 +338,11 @@ public class ConversationActivity extends AppCompatActivity {
             }
         });
 
-        onlineHandler = new Handler(Looper.getMainLooper()) {
-            @Override
-            public void handleMessage(Message msg) {
-                try {
-                    Bundle data = msg.getData();
-                    if (data.getSerializable(ADD_MESSAGE) != null) {
-                        final ConversationMessageInfo cmi = (ConversationMessageInfo) data
-                                .getSerializable(ADD_MESSAGE);
-                        cmi.setStatus(null);
-                        if (status != null && (status == ActivityStatus.STOPPED ||
-                                status == ActivityStatus.DESTROYED ||
-                                status == ActivityStatus.PAUSED)) {
-                            waitingReadList.add(cmi.getId());
-                        }
-                        adapter.getDecyrptMap().put(cmi.getId(), true);
-                        adapter.add(cmi);
-                    } else if (data.getSerializable(RECEIVE_MESSAGE) != null) {
-                        long id = (long) data.getSerializable(RECEIVE_MESSAGE);
-                        DbEntryService.updateMessagesToReceive(id);
-                        adapter.setStatusToReceive();
-                    } else if (data.getSerializable(READ_MESSAGE) != null) {
-                        long id = (long) data.getSerializable(READ_MESSAGE);
-                        DbEntryService.updateSentMessagesToRead(id);
-                        adapter.setStatusToRead();
-                    }
-                } catch (Exception e) {
-                    Log.e(TAG, e.getMessage());
-                }
-            }
-        };
-
         TextView tvError = (TextView) findViewById(R.id.tvError);
         RelativeLayout msgLayout = (RelativeLayout) findViewById(R.id.messageLayout);
         HashMap<String, String> chatRoom = DbEntryService.getChatByTopic(chatTopic);
         if ("0".equals(chatRoom.get(DbConstants.CHAT_PBK_SENT))) {
+            //if ((chatRoom.get(DbConstants.CHAT_MSGK)) == null) {
             tvError.setText(R.string.key_not_created_error);
             tvError.setVisibility(View.VISIBLE);
             mSwipeRefreshLayout.setVisibility(View.GONE);
@@ -361,6 +370,11 @@ public class ConversationActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
 
+            if ((chatRoom.get(DbConstants.CHAT_MSGK)) != null) {
+                MqttSendMsgTask task = new MqttSendMsgTask(chatTopic, MqttConstants.MQTT_PB_TAKEN_SELF.getBytes());
+                AsimService.getSubSendExecutor().submit(task);
+            }
+
         } else {
             tvError.setVisibility(View.GONE);
             mSwipeRefreshLayout.setVisibility(View.VISIBLE);
@@ -372,43 +386,21 @@ public class ConversationActivity extends AppCompatActivity {
         }
 
 
-        checkWaitingList();
         Notification.clearNotification(this);
     }
 
-    private void checkWaitingList() {
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        adapter = null;
+    }
 
-        for (final Long id : waitingReadList) {
-            try {
-                new SetMsgStatusTask(id, ConversationMessageStatus.READ).start();
-                HashMap<String, String> dbMap = DbEntryService.getMessageById(id);
-                ConversationMessageInfo ci = new ConversationMessageInfo();
-                Integer type = Integer.parseInt(dbMap.get(DbConstants.MESSAGE_TYPE));
-                if (type == 0) {
-                    ci.setChatId(0l);
-
-                    String code = dbMap.get(DbConstants.MESSAGE_STATUS);
-                    ci.setStatus(ConversationMessageStatus.get(Integer.parseInt(code)));
-
-                    String temp = dbMap.get(DbConstants.MESSAGE_CONTENT);
-                    byte[] encrypted = Base64.decode(temp.getBytes(), Base64.DEFAULT);
-                    ci.setContent(getDbDecrypted(encrypted));
-
-                    Long ms = Long.parseLong(dbMap.get(DbConstants.MESSAGE_SENDING_TIME));
-                    ci.setUpdatedDate(new Date(ms));
-
-                    adapter.getDecyrptMap().put(id, true);
-                    adapter.add(ci);
-                    DbEntryService.updateMessageStatus(id, ConversationMessageStatus.READ.getCode
-                            ());
-                }
-
-            } catch (NumberFormatException e) {
-                e.printStackTrace();
-            }
-
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            finish();
         }
-        waitingReadList.clear();
+        return super.onKeyDown(keyCode, event);
     }
 
     private void getMessages() {
@@ -487,7 +479,9 @@ public class ConversationActivity extends AppCompatActivity {
                             ci.setId(Long.parseLong(id));
                             ids.add(ci.getId());
 
-                            Integer type = Integer.parseInt(msg.get(DbConstants.MESSAGE_TYPE));
+                            Integer typeCode = Integer.parseInt(msg.get(DbConstants.MESSAGE_TYPE));
+                            ConversationMessageType type = ConversationMessageType.get(typeCode);
+                            ci.setType(type);
 
                             String code = msg.get(DbConstants.MESSAGE_STATUS);
                             ci.setStatus(ConversationMessageStatus.get(Integer.parseInt(code)));
@@ -497,14 +491,12 @@ public class ConversationActivity extends AppCompatActivity {
                             byte[] encrypted = Base64.decode(temp.getBytes(), Base64.DEFAULT);
                             ci.setContent(encrypted);
 
+                            ci.setSentReceiveDate(new Date(Long.parseLong(msg.get(DbConstants.MESSAGE_SENDING_TIME))));
 
                             Long ms = Long.parseLong(msg.get(DbConstants.MESSAGE_SENDING_TIME));
                             ci.setUpdatedDate(new Date(ms));
 
-                            if (type == 1) {
-                                ci.setChatId(chatId);
-                            } else {
-                                ci.setChatId(0l);
+                            if (type == ConversationMessageType.RECEIVED) {
                                 if (ci.getStatus() == ConversationMessageStatus.RECEIVED) {
                                     isThereUnread = true;
                                 }
@@ -547,17 +539,9 @@ public class ConversationActivity extends AppCompatActivity {
                             .getUpdatedDate();
                     DbEntryService.updateMessagesToRead(updatedDate.getTime());
 
-                    Thread allRead = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            try {
-                                //TODO allread
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-                    allRead.start();
+                    MqttSendMsgTask task = new MqttSendMsgTask(chatTopic, MqttConstants.MQTT_READ_ALL_SELF.getBytes());
+                    AsimService.getSubSendExecutor().submit(task);
+
                 }
 
                 for (ConversationMessageInfo ci : messageInfos) {
@@ -598,9 +582,7 @@ public class ConversationActivity extends AppCompatActivity {
             protected Boolean doInBackground(Void... params) {
                 byte[] content = first.getContent();
                 byte[] msgEncrypted = getMsgEncrypted(content);
-                String encoded = Base64.encodeToString(msgEncrypted, Base64.DEFAULT);
-                String message = MqttConstants.MQTT_MSG_SENT + encoded;
-                return AsimService.getMqttInit().sendMessage(chatTopic, message.getBytes());
+                return AsimService.getMqttInit().sendMessage(chatTopic, msgEncrypted);
             }
 
             @Override
