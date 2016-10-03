@@ -5,16 +5,15 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Base64;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -119,7 +118,7 @@ public class ContactActivity extends AppCompatActivity {
                         for (int i = (selected.size() - 1); i >= 0; i--) {
                             if (selected.valueAt(i)) {
                                 try {
-                                    ConversationInfo mAdapterItem = (ConversationInfo) mAdapter
+                                    ConversationInfo mAdapterItem = mAdapter
                                             .getItem(selected.keyAt(i));
                                     // Remove selected items following the ids
                                     mAdapter.remove(mAdapterItem);
@@ -143,7 +142,7 @@ public class ContactActivity extends AppCompatActivity {
                         for (int i = (selected.size() - 1); i >= 0; i--) {
                             if (selected.valueAt(i)) {
                                 try {
-                                    ConversationInfo mAdapterItem = (ConversationInfo) mAdapter
+                                    ConversationInfo mAdapterItem = mAdapter
                                             .getItem(selected.keyAt(i));
                                     shareMsg += mAdapterItem.getRoomTopic() + "\n";
                                 } catch (Exception e) {
@@ -288,25 +287,34 @@ public class ContactActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
         super.onBackPressed();
-        android.app.AlertDialog.Builder alert = new android.app.AlertDialog.Builder(this);
-        alert.setTitle("DİKKAT");
-        alert.setMessage(R.string.back_press_alert);
-        alert.setPositiveButton("EVET", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                finish();
-            }
-        });
 
-        alert.setNegativeButton("HAYIR", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
 
-            }
-        });
+    }
 
-        alert.create().show();
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            android.app.AlertDialog.Builder alert = new android.app.AlertDialog.Builder(this);
+            alert.setTitle("DİKKAT");
+            alert.setMessage(R.string.back_press_alert);
+            alert.setPositiveButton("EVET", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    finish();
+                }
+            });
 
+            alert.setNegativeButton("HAYIR", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+
+                }
+            });
+
+            alert.create().show();
+            //finish();
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     private void addContact() {
@@ -388,10 +396,13 @@ public class ContactActivity extends AppCompatActivity {
 
                 Long time = System.currentTimeMillis();
 
-                topic = Base64.encodeToString((Build.ID + "___" + time).getBytes(), Base64.DEFAULT);
-                //topic = "denemeamaclitop2";
+                //topic = Base64.encodeToString((Build.ID + "___" + time).getBytes(), Base64.DEFAULT);
+                topic = "test" + System.currentTimeMillis();
                 ci.setRoomTopic(topic);
+
                 ci.setId(DbEntryService.saveChat(ci));
+                ci.setStatus(ConversationStatus.UNSUBSCRIBED);
+                ci.setUnreadMsgNumber(0);
 
                 PbKeyProcessorTask keyTask = new PbKeyProcessorTask(ContactActivity
                         .this, ci.getRoomTopic(), 0);
@@ -437,6 +448,7 @@ public class ContactActivity extends AppCompatActivity {
 
                     if (mAdapter != null) {
                         mAdapter.add(ci);
+                        contactInfos.add(ci);
                     }
                     //addDialog.dismiss();
                 } else {
@@ -532,6 +544,8 @@ public class ContactActivity extends AppCompatActivity {
                 ci.setRoomTopic(roomTopic);
                 ci.setIsSent(0);
                 ci.setId(DbEntryService.saveChat(ci));
+                ci.setStatus(ConversationStatus.UNSUBSCRIBED);
+                ci.setUnreadMsgNumber(0);
 
                 PbKeyProcessorTask keyTask = new PbKeyProcessorTask(ContactActivity
                         .this, ci.getRoomTopic(), 0);
@@ -568,6 +582,7 @@ public class ContactActivity extends AppCompatActivity {
 
                     if (mAdapter != null) {
                         mAdapter.add(ci);
+                        contactInfos.add(ci);
                     }
 
                 } else {

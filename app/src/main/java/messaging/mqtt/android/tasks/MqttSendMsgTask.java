@@ -4,9 +4,7 @@ import android.util.Log;
 
 import messaging.mqtt.android.service.AsimService;
 
-/**
- * Created by eercan on 30.09.2016.
- */
+
 public class MqttSendMsgTask implements Runnable {
 
     private static final String TAG = MqttSendMsgTask.class.getSimpleName();

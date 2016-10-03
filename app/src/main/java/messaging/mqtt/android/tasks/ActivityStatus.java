@@ -3,9 +3,7 @@ package messaging.mqtt.android.tasks;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by eercan on 24.12.2015.
- */
+
 public enum ActivityStatus {
     CREATED(1, "Created"),
     STARTED(2, "Started"),
@@ -18,7 +16,7 @@ public enum ActivityStatus {
     private int code;
     private String desc;
 
-    private ActivityStatus(int code, String desc) {
+    ActivityStatus(int code, String desc) {
         this.code = code;
         this.desc = desc;
 

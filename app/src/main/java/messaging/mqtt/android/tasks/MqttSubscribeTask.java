@@ -7,9 +7,6 @@ import messaging.mqtt.android.common.model.ConversationInfo;
 import messaging.mqtt.android.common.ref.ConversationStatus;
 import messaging.mqtt.android.service.AsimService;
 
-/**
- * Created by mree on 28.09.2016.
- */
 public class MqttSubscribeTask implements Runnable {
     private static final String TAG = MqttSubscribeTask.class.getSimpleName();
     private ContactListAdapter adapter;
@@ -20,7 +17,7 @@ public class MqttSubscribeTask implements Runnable {
         this.ci = ci;
     }
 
-  ;  @Override
+    @Override
     public void run() {
         boolean isSubs = AsimService.getMqttInit().subscribe(ci.getRoomTopic());
         if (isSubs) {

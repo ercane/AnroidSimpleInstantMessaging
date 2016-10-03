@@ -7,82 +7,109 @@
     android:layout_alignParentBottom="true"
     android:layout_centerHorizontal="true"
     android:orientation="vertical"
-    tools:context=".MainActivity"
-    android:paddingTop="50dp"
     android:paddingBottom="50dp"
     android:paddingLeft="20dp"
-    android:paddingRight="20dp">
+    android:paddingRight="20dp"
+    android:paddingTop="50dp"
+    tools:context=".MainActivity">
 
     <LinearLayout
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:id="@+id/createPass">
+        android:orientation="vertical">
+
+        <ImageView
+            android:id="@+id/imageView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:src="@drawable/ic_launcher" />
 
         <TextView
+            android:id="@+id/textView3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:text="Android Simple Instant Messaging"
+            android:textAlignment="center"
             android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="@color/colorPrimary"
+            android:textSize="25dp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/createPass"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:orientation="vertical">
+
+        <TextView
             android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
             android:layout_gravity="center_horizontal"
             android:text="@string/main_create_pass_msg"
-            android:textAlignment="center" />
+            android:textAlignment="center"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
         <EditText
+            android:id="@+id/newPass1"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="numberPassword"
+            android:layout_gravity="center_horizontal"
             android:ems="10"
-            android:id="@+id/newPass1"
-            android:layout_gravity="center_horizontal" />
+            android:inputType="numberPassword" />
 
         <EditText
+            android:id="@+id/newPass2"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="numberPassword"
+            android:layout_gravity="center_horizontal"
             android:ems="10"
-            android:id="@+id/newPass2"
-            android:layout_gravity="center_horizontal" />
+            android:inputType="numberPassword" />
 
         <Button
+            android:id="@+id/createBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="OLUŞTUR"
-            android:id="@+id/createBtn"
-            android:layout_gravity="center_horizontal" />
+            android:layout_gravity="center_horizontal"
+            android:text="OLUŞTUR" />
     </LinearLayout>
 
 
 
     <LinearLayout
-        android:orientation="vertical"
+        android:id="@+id/enterPass"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:id="@+id/enterPass">
+        android:layout_marginTop="20dp"
+        android:orientation="vertical">
 
         <TextView
+            android:id="@+id/textView2"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:layout_gravity="center_horizontal"
             android:text="Lütfen şifrenizi giriniz."
-            android:id="@+id/textView2"
-            android:layout_gravity="center_horizontal" />
+            android:textAppearance="?android:attr/textAppearanceLarge" />
 
         <EditText
+            android:id="@+id/pass"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:inputType="numberPassword"
+            android:layout_gravity="center_horizontal"
             android:ems="10"
-            android:id="@+id/pass"
-            android:layout_gravity="center_horizontal" />
+            android:inputType="numberPassword" />
 
         <Button
+            android:id="@+id/enterBtn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="GİR"
-            android:id="@+id/enterBtn"
-            android:layout_gravity="center_horizontal" />
+            android:layout_gravity="center_horizontal"
+            android:text="GİR" />
 
     </LinearLayout>
 

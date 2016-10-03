@@ -21,9 +21,6 @@ import messaging.mqtt.android.database.DbEntryService;
 import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
 
-/**
- * Created by eercan on 30.09.2016.
- */
 public class MsgProcessorTask implements Runnable {
 
     private static final String TAG = MsgProcessorTask.class.getSimpleName();
@@ -43,7 +40,7 @@ public class MsgProcessorTask implements Runnable {
     public void run() {
         try {
             String payloadMsg = new String(payload, "UTF-8");
-            Log.d(TAG, "Message arrived: " + payloadMsg);
+            Log.e(TAG, "Message arrived: " + payloadMsg);
             HashMap<String, String> chatByTopic = DbEntryService.getChatByTopic(topic);
 
             String[] split = payloadMsg.split(MqttConstants.MQTT_SPLIT_PREFIX);

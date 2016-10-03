@@ -36,9 +36,7 @@ import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.MqttSendMsgTask;
 
-/**
- * Created by eercan on 30.12.2015.
- */
+
 public class MsgEncryptOperations {
 
     public static Integer ALARM_CODE = -25;

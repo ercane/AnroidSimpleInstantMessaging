@@ -5,9 +5,6 @@ import android.util.Log;
 
 import messaging.mqtt.android.crypt.MsgEncryptOperations;
 
-/**
- * Created by mree on 01.10.2016.
- */
 public class PbKeyProcessorTask implements Runnable {
 
     private static final String TAG = PbKeyProcessorTask.class.getSimpleName();

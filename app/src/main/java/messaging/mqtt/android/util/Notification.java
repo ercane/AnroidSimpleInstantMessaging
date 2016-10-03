@@ -9,9 +9,6 @@ import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.ConversationActivity;
 import messaging.mqtt.android.database.DbEntryService;
 
-/**
- * Created by mree on 25.09.2016.
- */
 public class Notification {
 
     private static int NOTIFICATION_ID = 123;

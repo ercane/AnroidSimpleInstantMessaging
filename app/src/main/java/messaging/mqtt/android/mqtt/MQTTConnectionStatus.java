@@ -1,8 +1,6 @@
 package messaging.mqtt.android.mqtt;
 
-/**
- * Created by eercan on 21.03.2016.
- */
+
 public enum MQTTConnectionStatus {
     INITIAL(1,"Initial"), // initial status
     CONNECTING(2,"Connecting"), // attempting to connect
@@ -18,24 +16,8 @@ public enum MQTTConnectionStatus {
     private Integer code;
     private String desc;
 
-    private MQTTConnectionStatus(Integer code, String desc) {
+    MQTTConnectionStatus(Integer code, String desc) {
         this.code = code;
-        this.desc = desc;
-    }
-
-    public Integer getCode() {
-        return code;
-    }
-
-    public void setCode(Integer code) {
-        this.code = code;
-    }
-
-    public String getDesc() {
-        return desc;
-    }
-
-    public void setDesc(String desc) {
         this.desc = desc;
     }
 
@@ -52,6 +34,22 @@ public enum MQTTConnectionStatus {
         }
 
         throw new IllegalArgumentException("No matching type: " + code);
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
     }
 }
 

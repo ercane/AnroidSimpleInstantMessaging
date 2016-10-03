@@ -3,9 +3,7 @@ package messaging.mqtt.android.common.ref;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by mree on 02.10.2016.
- */
+
 public enum ConversationMessageType {
     SENT(1, "Sent"),
     RECEIVED(2, "Received");
@@ -13,7 +11,7 @@ public enum ConversationMessageType {
     private int code;
     private String desc;
 
-    private ConversationMessageType(int code, String desc) {
+    ConversationMessageType(int code, String desc) {
         this.code = code;
         this.desc = desc;
 

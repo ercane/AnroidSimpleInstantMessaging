@@ -2,9 +2,6 @@ package messaging.mqtt.android.mqtt;
 
 import android.os.Build;
 
-/**
- * Created by eercan on 21.03.2016.
- */
 public class MqttConstants {
     public static final String MQTT_CONNECTION_LOST_ACTION = "ACTION_MQTT_CONNECTION_LOST";
     public static final String MQTT_MESSAGE_ARRIVED_ACTION = "ACTION_MQTT_MESSAGE_ARRIVED";

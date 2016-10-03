@@ -3,9 +3,6 @@ package messaging.mqtt.android.common.ref;
 import java.util.HashSet;
 import java.util.Set;
 
-/**
- * Created by mree on 28.09.2016.
- */
 public enum ConversationStatus {
     SUBSCRIBED(1, "Subscribed"),
     UNSUBSCRIBED(2, "Unsubscribed");
@@ -13,7 +10,7 @@ public enum ConversationStatus {
     private int code;
     private String desc;
 
-    private ConversationStatus(int code, String desc) {
+    ConversationStatus(int code, String desc) {
         this.code = code;
         this.desc = desc;
 
@@ -31,14 +28,6 @@ public enum ConversationStatus {
             }
         }
         throw new IllegalArgumentException("No matching type: " + code);
-    }
-
-    public Integer getCode() {
-        return code;
-    }
-
-    public String getDesc() {
-        return desc;
     }
 
     public static String encode(Set<ConversationStatus> csSet) {
@@ -87,5 +76,13 @@ public enum ConversationStatus {
 
     public static Set<Integer> getCodes(String encoded) {
         return getCodes(decode(encoded));
+    }
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public String getDesc() {
+        return desc;
     }
 }

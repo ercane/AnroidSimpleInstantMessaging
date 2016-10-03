@@ -10,9 +10,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.MsgProcessorTask;
 
-/**
- * Created by eercan on 28.03.2016.
- */
+
 public class MqttPushCallback implements MqttCallback {
     private static final String TAG = MqttPushCallback.class.getSimpleName();
     private Context context;
@@ -29,7 +27,7 @@ public class MqttPushCallback implements MqttCallback {
 
     @Override
     public void messageArrived(String topic, MqttMessage message) throws Exception {
-
+        Log.e(TAG, "Message arrived: ");
         try {
             MsgProcessorTask task = new MsgProcessorTask(context, topic, message.getPayload());
             AsimService.getProcessorExecutor().submit(task);

@@ -5,9 +5,7 @@ import messaging.mqtt.android.act.adapter.MessageListAdapter;
 import messaging.mqtt.android.common.model.ConversationMessageInfo;
 import messaging.mqtt.android.crypt.DbEncryptOperations;
 
-/**
- * Created by eercan on 07.01.2016.
- */
+
 public class DbDecyrptTask implements Runnable {
 
 

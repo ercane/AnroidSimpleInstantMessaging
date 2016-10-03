@@ -19,9 +19,7 @@ import messaging.mqtt.android.database.DbTableService;
 import messaging.mqtt.android.mqtt.MqttInit;
 import messaging.mqtt.android.sharedPrefs.SharedPreferencesService;
 
-/**
- * Created by mree on 27.09.2016.
- */
+
 public class AsimService extends Service {
     private static final int KEEP_ALIVE_TIME = 1;
     private static final TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
