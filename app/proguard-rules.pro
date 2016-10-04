@@ -9,6 +9,7 @@
 
 # Add any project specific keep options here:
 -keep class org.spongycastle.** { *; }
+-keep class org.eclipse.paho.** { *; }
 -dontwarn org.spongycastle.**
 
 

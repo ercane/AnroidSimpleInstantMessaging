@@ -22,6 +22,7 @@ import android.widget.AbsListView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -31,9 +32,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.adapter.MessageListAdapter;
@@ -56,8 +54,6 @@ public class ConversationActivity extends AppCompatActivity {
     public static final String ADD_MESSAGE = "AddMessage";
     public static final String READ_MESSAGE = "ReadMessage";
     public static final String RECEIVE_MESSAGE = "ReceiveMessage";
-    private static final int KEEP_ALIVE_TIME = 1;
-    private static final TimeUnit KEEP_ALIVE_TIME_UNIT = TimeUnit.SECONDS;
     public static Long chatId;
     public static String chatTopic;
     public static ActivityStatus status;
@@ -70,18 +66,8 @@ public class ConversationActivity extends AppCompatActivity {
             };
     private static Integer SHOW_LIMIT = 20;
     private static Handler addHandler;
-    private static Handler offlineHandler;
+    private static Handler notreadyHandler;
     private static String TAG = ConversationActivity.class.getSimpleName();
-    private static List<Long> waitingReadList = new ArrayList<>();
-    private static int corePoolSize = 5;
-    private static int maximumPoolSize = 10;
-    private static LinkedBlockingQueue<Runnable> workQueue = new LinkedBlockingQueue<>();
-    private static ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(
-            corePoolSize,       // Initial pool size
-            maximumPoolSize,       // Max pool size
-            KEEP_ALIVE_TIME,
-            KEEP_ALIVE_TIME_UNIT,
-            workQueue);
     private static MessageListAdapter adapter;
     public Long messageLimitTime = System.currentTimeMillis();
     private ListView listView;
@@ -90,6 +76,7 @@ public class ConversationActivity extends AppCompatActivity {
     private List<ConversationMessageInfo> messageList;
     private SwipeRefreshLayout mSwipeRefreshLayout;
     private ActionMode mode;
+    private ProgressBar pbError;
 
 
     public static byte[] getDbEncrypted(byte[] content) {
@@ -187,11 +174,6 @@ public class ConversationActivity extends AppCompatActivity {
         String contactName = getIntent().getStringExtra(ContactActivity.CONTACT_NAME);
         setTitle(contactName);
 
-//        actionBar.setHomeButtonEnabled(true);
-//        actionBar.setDisplayHomeAsUpEnabled(false);
-//        actionBar.setDisplayShowTitleEnabled(false);
-//        actionBar.setCustomView(customActionBarView);
-//        actionBar.setDisplayShowCustomEnabled(true);
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id
                 .activity_main_swipe_refresh_layout);
         listView = (ListView) findViewById(R.id.messageList);
@@ -208,11 +190,8 @@ public class ConversationActivity extends AppCompatActivity {
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean
                     checked) {
-                // Capture total checked items
                 final int checkedCount = listView.getCheckedItemCount();
-                // Set the CAB title according to total checked items
                 mode.setTitle(checkedCount + " Selected");
-                // Calls toggleSelection method from ListViewAdapter Class
                 adapter.toggleSelection(position);
 
             }
@@ -222,20 +201,16 @@ public class ConversationActivity extends AppCompatActivity {
                 List<Long> selected;
                 switch (item.getItemId()) {
                     case R.id.item_delete:
-                        // Calls getSelectedIds method from ListViewAdapter Class
                         selected = adapter.getSelectedIds();
-                        // Captures all selected ids with a loop
                         for (int i = (selected.size() - 1); i >= 0; i--) {
                             Long id = selected.get(i);
                             if (adapter.getSelectMap().get(id)) {
                                 ConversationMessageInfo selecteditem = adapter
                                         .getItem(id);
-                                // Remove selected items following the ids
                                 DbEntryService.removeMessage(selecteditem.getId());
                                 adapter.remove(selecteditem);
                             }
                         }
-                        // Close CAB
                         mode.finish();
                         return true;
                     case R.id.item_copy:
@@ -339,12 +314,14 @@ public class ConversationActivity extends AppCompatActivity {
         });
 
         TextView tvError = (TextView) findViewById(R.id.tvError);
+        pbError = (ProgressBar) findViewById(R.id.pbError);
         RelativeLayout msgLayout = (RelativeLayout) findViewById(R.id.messageLayout);
         HashMap<String, String> chatRoom = DbEntryService.getChatByTopic(chatTopic);
         if ("0".equals(chatRoom.get(DbConstants.CHAT_PBK_SENT))) {
             //if ((chatRoom.get(DbConstants.CHAT_MSGK)) == null) {
             tvError.setText(R.string.key_not_created_error);
             tvError.setVisibility(View.VISIBLE);
+            pbError.setVisibility(View.VISIBLE);
             mSwipeRefreshLayout.setVisibility(View.GONE);
             msgLayout.setVisibility(View.GONE);
             msgLayout.setEnabled(false);
@@ -377,6 +354,7 @@ public class ConversationActivity extends AppCompatActivity {
 
         } else {
             tvError.setVisibility(View.GONE);
+            pbError.setVisibility(View.GONE);
             mSwipeRefreshLayout.setVisibility(View.VISIBLE);
             msgLayout.setEnabled(true);
             adapter = new MessageListAdapter(getApplicationContext(), R.layout.message_layout,
@@ -545,7 +523,7 @@ public class ConversationActivity extends AppCompatActivity {
                 }
 
                 for (ConversationMessageInfo ci : messageInfos) {
-                    threadPoolExecutor.submit(new DbDecyrptTask(adapter, ci));
+                    AsimService.getProcessorExecutor().submit(new DbDecyrptTask(adapter, ci));
                 }
 
                 List<ConversationMessageInfo> adapterList = adapter.getMessageList();

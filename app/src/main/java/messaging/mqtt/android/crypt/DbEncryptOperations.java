@@ -3,7 +3,6 @@ package messaging.mqtt.android.crypt;
 import android.os.Build;
 import android.util.Base64;
 
-
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;

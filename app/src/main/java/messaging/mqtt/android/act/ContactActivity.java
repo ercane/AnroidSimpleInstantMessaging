@@ -5,11 +5,13 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Base64;
 import android.util.Log;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
@@ -38,7 +40,6 @@ import messaging.mqtt.android.common.ref.ConversationStatus;
 import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
 import messaging.mqtt.android.service.AsimService;
-import messaging.mqtt.android.tasks.MqttSubscribeTask;
 import messaging.mqtt.android.tasks.PbKeyProcessorTask;
 import messaging.mqtt.android.util.BoolFlag;
 import messaging.mqtt.android.util.Notification;
@@ -109,37 +110,50 @@ public class ContactActivity extends AppCompatActivity {
 
             @Override
             public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-                SparseBooleanArray selected;
+                final SparseBooleanArray selected = mAdapter.getSelectedIds();
+                int i;
                 switch (item.getItemId()) {
                     case R.id.item_delete:
-                        // Calls getSelectedIds method from ListViewAdapter Class
-                        selected = mAdapter.getSelectedIds();
-                        // Captures all selected ids with a loop
-                        for (int i = (selected.size() - 1); i >= 0; i--) {
-                            if (selected.valueAt(i)) {
-                                try {
-                                    ConversationInfo mAdapterItem = mAdapter
-                                            .getItem(selected.keyAt(i));
-                                    // Remove selected items following the ids
-                                    mAdapter.remove(mAdapterItem);
-                                    DbEntryService.removeChat(mAdapterItem.getId());
-                                    Toast.makeText(ContactActivity.this, "Conversation with " +
-                                            mAdapterItem.getRoomName() + " is removed.", Toast
-                                            .LENGTH_SHORT);
-                                } catch (Exception e) {
-                                    Toast.makeText(ContactActivity.this, "Conversation with " +
-                                            "cannot be removed. " + e.getMessage(), Toast
-                                            .LENGTH_LONG);
+                        android.app.AlertDialog.Builder alert = new android.app.AlertDialog.Builder(ContactActivity.this);
+                        alert.setTitle("DİKKAT");
+                        alert.setMessage(R.string.remove_contact_alert);
+                        alert.setPositiveButton("EVET", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+                                for (i = (selected.size() - 1); i >= 0; i--) {
+                                    if (selected.valueAt(i)) {
+                                        try {
+                                            ConversationInfo mAdapterItem = mAdapter
+                                                    .getItem(selected.keyAt(i));
+                                            // Remove selected items following the ids
+                                            mAdapter.remove(mAdapterItem);
+                                            DbEntryService.removeChat(mAdapterItem.getId());
+                                            mAdapter.remove(mAdapterItem);
+                                        } catch (Exception e) {
+                                            Toast.makeText(ContactActivity.this, "Conversation with " +
+                                                    "cannot be removed. " + e.getMessage(), Toast
+                                                    .LENGTH_LONG);
+                                        }
+                                    }
                                 }
+                                // Close CAB
+
                             }
-                        }
-                        // Close CAB
+                        });
+
+                        alert.setNegativeButton("HAYIR", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialogInterface, int i) {
+
+                            }
+                        });
+
+                        alert.create().show();
                         mode.finish();
                         return true;
                     case R.id.item_share:
-                        selected = mAdapter.getSelectedIds();
                         String shareMsg = "";
-                        for (int i = (selected.size() - 1); i >= 0; i--) {
+                        for (i = (selected.size() - 1); i >= 0; i--) {
                             if (selected.valueAt(i)) {
                                 try {
                                     ConversationInfo mAdapterItem = mAdapter
@@ -222,19 +236,26 @@ public class ContactActivity extends AppCompatActivity {
             AsyncTask<Void, Void, Boolean> getList = new AsyncTask<Void, Void, Boolean>() {
                 @Override
                 protected Boolean doInBackground(Void... params) {
+                    ConversationInfo ci = new ConversationInfo();
                     try {
                         for (HashMap<String, String> chat : allChats) {
-                            ConversationInfo ci = new ConversationInfo();
-                            ci.setId(Long.parseLong(chat.get(DbConstants.CHAT_ID)));
-                            ci.setRoomTopic(chat.get(DbConstants.CHAT_TOPIC));
-                            ci.setRoomName(chat.get(DbConstants.CHAT_NAME));
-                            ci.setIsSent(Integer.parseInt(chat.get(DbConstants.CHAT_PBK_SENT)));
-                            int count = DbEntryService.getUnreadNumber(ci.getId());
-                            ci.setUnreadMsgNumber(count);
-                            contactInfos.add(ci);
+                            try {
+                                ci.setId(Long.parseLong(chat.get(DbConstants.CHAT_ID)));
+                                ci.setRoomTopic(chat.get(DbConstants.CHAT_TOPIC));
+                                ci.setRoomName(chat.get(DbConstants.CHAT_NAME));
+                                ci.setIsSent(Integer.parseInt(chat.get(DbConstants.CHAT_PBK_SENT)));
+                                int count = DbEntryService.getUnreadNumber(ci.getId());
+                                ci.setUnreadMsgNumber(count);
 
-                            MqttSubscribeTask subscribeTask = new MqttSubscribeTask(mAdapter, ci);
-                            AsimService.getSubSendExecutor().submit(subscribeTask);
+                                ci.setStatus(ConversationStatus.UNSUBSCRIBED);
+                                if (AsimService.getMqttInit().subscribe(ci.getRoomTopic())) {
+                                    ci.setStatus(ConversationStatus.SUBSCRIBED);
+                                }
+                            } catch (Exception e) {
+                                Log.e(TAG, e.getMessage() + "");
+                            }
+
+                            contactInfos.add(ci);
                         }
                         return true;
                     } catch (Exception e) {
@@ -396,8 +417,8 @@ public class ContactActivity extends AppCompatActivity {
 
                 Long time = System.currentTimeMillis();
 
-                //topic = Base64.encodeToString((Build.ID + "___" + time).getBytes(), Base64.DEFAULT);
-                topic = "test" + System.currentTimeMillis();
+                topic = Base64.encodeToString((Build.ID + "___-___" + time).getBytes(), Base64.DEFAULT);
+                //topic = "test" + System.currentTimeMillis();
                 ci.setRoomTopic(topic);
 
                 ci.setId(DbEntryService.saveChat(ci));
@@ -406,20 +427,15 @@ public class ContactActivity extends AppCompatActivity {
 
                 PbKeyProcessorTask keyTask = new PbKeyProcessorTask(ContactActivity
                         .this, ci.getRoomTopic(), 0);
-                MqttSubscribeTask subscribeTask = new MqttSubscribeTask(mAdapter, ci);
                 AsimService.getProcessorExecutor().submit(keyTask);
-                AsimService.getSubSendExecutor().submit(subscribeTask);
             }
 
             @Override
             protected Boolean doInBackground(Void... params) {
 
                 try {
-                    // byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
-                    //         .this, ci.getRoomTopic());
-                    //     boolean state = AsimService.getMqttInit().subscribe(topic);
-                    //   return state;
-                    return true;
+                    boolean state = AsimService.getMqttInit().subscribe(topic);
+                    return state;
                 } catch (Exception e) {
                     return false;
                 }

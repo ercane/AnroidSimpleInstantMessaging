@@ -4,14 +4,31 @@
     android:layout_height="match_parent"
     tools:context="messaging.mqtt.android.act.ConversationActivity">
 
-    <TextView
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textAppearance="?android:attr/textAppearanceLarge"
-        android:text="Large Text"
-        android:id="@+id/tvError"
+        android:layout_above="@+id/activity_main_swipe_refresh_layout"
         android:layout_alignParentTop="true"
-        android:layout_centerHorizontal="true"/>
+        android:layout_centerHorizontal="true"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:text="Large Text"
+            android:textAppearance="?android:attr/textAppearanceLarge" />
+
+        <ProgressBar
+            android:id="@+id/pbError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBottom="@+id/tvError"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="center_horizontal" />
+    </LinearLayout>
 
     <android.support.v4.widget.SwipeRefreshLayout
         android:id="@+id/activity_main_swipe_refresh_layout"
@@ -19,8 +36,7 @@
         android:layout_height="wrap_content"
         android:layout_above="@+id/messageLayout"
         android:focusable="false"
-        android:focusableInTouchMode="false"
-        android:layout_below="@+id/tvError">
+        android:focusableInTouchMode="false">
 
         <ListView
             android:id="@+id/messageList"
@@ -30,9 +46,9 @@
             android:layout_alignParentTop="true"
             android:background="#ffffff"
             android:choiceMode="multipleChoice"
+            android:focusableInTouchMode="true"
             android:footerDividersEnabled="false"
-            android:stackFromBottom="true"
-            android:focusableInTouchMode="true"></ListView>
+            android:stackFromBottom="true"></ListView>
 
     </android.support.v4.widget.SwipeRefreshLayout>
 
