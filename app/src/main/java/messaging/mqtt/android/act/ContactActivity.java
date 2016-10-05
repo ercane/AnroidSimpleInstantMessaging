@@ -37,9 +37,12 @@ import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.adapter.ContactListAdapter;
 import messaging.mqtt.android.common.model.ConversationInfo;
 import messaging.mqtt.android.common.ref.ConversationStatus;
+import messaging.mqtt.android.crypt.MsgEncryptOperations;
 import messaging.mqtt.android.database.DbConstants;
 import messaging.mqtt.android.database.DbEntryService;
+import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
+import messaging.mqtt.android.tasks.MqttSendMsgTask;
 import messaging.mqtt.android.tasks.PbKeyProcessorTask;
 import messaging.mqtt.android.util.BoolFlag;
 import messaging.mqtt.android.util.Notification;
@@ -236,9 +239,9 @@ public class ContactActivity extends AppCompatActivity {
             AsyncTask<Void, Void, Boolean> getList = new AsyncTask<Void, Void, Boolean>() {
                 @Override
                 protected Boolean doInBackground(Void... params) {
-                    ConversationInfo ci = new ConversationInfo();
                     try {
                         for (HashMap<String, String> chat : allChats) {
+                            ConversationInfo ci = new ConversationInfo();
                             try {
                                 ci.setId(Long.parseLong(chat.get(DbConstants.CHAT_ID)));
                                 ci.setRoomTopic(chat.get(DbConstants.CHAT_TOPIC));
@@ -417,8 +420,8 @@ public class ContactActivity extends AppCompatActivity {
 
                 Long time = System.currentTimeMillis();
 
-                topic = Base64.encodeToString((Build.ID + "___-___" + time).getBytes(), Base64.DEFAULT);
-                //topic = "test" + System.currentTimeMillis();
+                topic = (Build.ID + "___-___" + time);
+                //topic = "testamaclitopic2";
                 ci.setRoomTopic(topic);
 
                 ci.setId(DbEntryService.saveChat(ci));
@@ -563,25 +566,25 @@ public class ContactActivity extends AppCompatActivity {
                 ci.setStatus(ConversationStatus.UNSUBSCRIBED);
                 ci.setUnreadMsgNumber(0);
 
-                PbKeyProcessorTask keyTask = new PbKeyProcessorTask(ContactActivity
+                /*PbKeyProcessorTask keyTask = new PbKeyProcessorTask(ContactActivity
                         .this, ci.getRoomTopic(), 0);
-                AsimService.getProcessorExecutor().submit(keyTask);
+                AsimService.getProcessorExecutor().submit(keyTask);*/
             }
 
             @Override
             protected Boolean doInBackground(Void... params) {
                 try {
-                    // byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
-                    //         .this, ci.getRoomTopic());
-                    /*String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
+                    byte[] publicKey = MsgEncryptOperations.createSelfKeySpec(ContactActivity
+                            .this, ci.getRoomTopic());
+                    String pbStr = Base64.encodeToString(publicKey, Base64.DEFAULT);
                     boolean state = AsimService.getMqttInit().subscribe(roomTopic);
                     if (state) {
                         MqttSendMsgTask task = new MqttSendMsgTask(roomTopic, (MqttConstants
                                 .MQTT_PB_SELF + pbStr).getBytes());
                         AsimService.getSubSendExecutor().submit(task);
                     }
-                    return state;*/
-                    return true;
+                    return state;
+                    //return true;
                 } catch (Exception e) {
                     return false;
                 }

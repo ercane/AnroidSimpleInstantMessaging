@@ -21,10 +21,10 @@ public class MqttInit {
     private static Context context;
 
     public MqttInit(Context context, String broker, String clientId) {
-        this.context = context;
-        this.broker = broker;
-        this.clientId = clientId;
-        this.broker = broker;
+        MqttInit.context = context;
+        MqttInit.broker = broker;
+        MqttInit.clientId = clientId;
+        MqttInit.broker = broker;
         init();
     }
 
@@ -102,7 +102,7 @@ public class MqttInit {
             MqttMessage m = new MqttMessage();
             m.setPayload(payload);
             m.setQos(2);
-            m.setRetained(false);
+            m.setRetained(true);
             mqttClient.publish(topic, m);
             Log.d(TAG, "Mqtt client send message to: " + topic);
             return true;
