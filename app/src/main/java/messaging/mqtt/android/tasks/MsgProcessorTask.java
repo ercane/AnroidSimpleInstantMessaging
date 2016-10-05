@@ -3,6 +3,7 @@ package messaging.mqtt.android.tasks;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Message;
 import android.util.Base64;
 import android.util.Log;
@@ -14,6 +15,7 @@ import messaging.mqtt.android.act.ConversationActivity;
 import messaging.mqtt.android.common.model.ConversationMessageInfo;
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
 import messaging.mqtt.android.common.ref.ConversationMessageType;
+import messaging.mqtt.android.common.ref.ReceipentStatus;
 import messaging.mqtt.android.crypt.DbEncryptOperations;
 import messaging.mqtt.android.crypt.MsgEncryptOperations;
 import messaging.mqtt.android.database.DbConstants;
@@ -60,6 +62,18 @@ public class MsgProcessorTask implements Runnable {
                 if (!Build.ID.equals(split[1])) {
                     changeStatus(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), ConversationMessageStatus.RECEIVED);
                 }
+            } else if (payloadMsg.startsWith(MqttConstants.MQTT_ONLINE_APPROVE)) {
+                if (!Build.ID.equals(split[1])) {
+                    applyOnline();
+                }
+            } else if (payloadMsg.startsWith(MqttConstants.MQTT_ONLINE_CHECK)) {
+                if (!Build.ID.equals(split[1])) {
+                    checkOnline();
+                }
+            } else if (payloadMsg.startsWith(MqttConstants.MQTT_OFFLINE)) {
+                if (!Build.ID.equals(split[1])) {
+                    applyOffline();
+                }
             } else {
                 byte[] decryptMsg = MsgEncryptOperations.decryptMsg(topic, payload);
                 String msg = new String(decryptMsg, "UTF-8");
@@ -70,6 +84,25 @@ public class MsgProcessorTask implements Runnable {
             }
         } catch (Exception e) {
             Log.e(TAG, e.getMessage());
+        }
+    }
+
+    private void checkOnline() {
+        MqttSendMsgTask task = new MqttSendMsgTask(topic, MqttConstants.MQTT_ONLINE_APPROVE_SELF.getBytes());
+        AsimService.getSubSendExecutor().submit(task);
+    }
+
+    private void applyOffline() {
+        Handler handler = ConversationActivity.getTitleHandler();
+        if (handler != null && topic.equals(ConversationActivity.chatTopic)) {
+            handler.sendEmptyMessage(ReceipentStatus.OFFLINE.getCode());
+        }
+    }
+
+    private synchronized void applyOnline() {
+        Handler handler = ConversationActivity.getTitleHandler();
+        if (handler != null && topic.equals(ConversationActivity.chatTopic)) {
+            handler.sendEmptyMessage(ReceipentStatus.ONLINE.getCode());
         }
     }
 

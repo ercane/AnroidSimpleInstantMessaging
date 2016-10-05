@@ -9,7 +9,9 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.text.Html;
 import android.util.Base64;
 import android.util.Log;
 import android.view.ActionMode;
@@ -38,6 +40,7 @@ import messaging.mqtt.android.act.adapter.MessageListAdapter;
 import messaging.mqtt.android.common.model.ConversationMessageInfo;
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
 import messaging.mqtt.android.common.ref.ConversationMessageType;
+import messaging.mqtt.android.common.ref.ReceipentStatus;
 import messaging.mqtt.android.crypt.DbEncryptOperations;
 import messaging.mqtt.android.crypt.MsgEncryptOperations;
 import messaging.mqtt.android.database.DbConstants;
@@ -47,6 +50,7 @@ import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.ActivityStatus;
 import messaging.mqtt.android.tasks.DbDecyrptTask;
 import messaging.mqtt.android.tasks.MqttSendMsgTask;
+import messaging.mqtt.android.util.HtmlUtils;
 import messaging.mqtt.android.util.Notification;
 
 public class ConversationActivity extends AppCompatActivity {
@@ -66,10 +70,11 @@ public class ConversationActivity extends AppCompatActivity {
             };
     private static Integer SHOW_LIMIT = 20;
     private static Handler addHandler;
-    private static Handler notreadyHandler;
+    private static Handler titleHandler;
     private static String TAG = ConversationActivity.class.getSimpleName();
     private static MessageListAdapter adapter;
     public Long messageLimitTime = System.currentTimeMillis();
+    private ActionBar actionBar;
     private ListView listView;
     private EditText messageText;
     private Button sendMessage;
@@ -161,18 +166,25 @@ public class ConversationActivity extends AppCompatActivity {
         return decyrpted;
     }
 
+    public static Handler getTitleHandler() {
+        return titleHandler;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
 
+        actionBar = getSupportActionBar();
         status = ActivityStatus.CREATED;
 
         chatId = getIntent().getLongExtra(ContactActivity.CONTACT_ID, -1);
         chatTopic = getIntent().getStringExtra(ContactActivity.CONTACT_TOPIC);
-        String contactName = getIntent().getStringExtra(ContactActivity.CONTACT_NAME);
-        setTitle(contactName);
+        final String contactName = getIntent().getStringExtra(ContactActivity.CONTACT_NAME);
+
+        if (actionBar != null) {
+            actionBar.setTitle(Html.fromHtml("<font color=\"" + HtmlUtils.WHITE + "\">" + contactName + "</font>"));
+        }
 
         mSwipeRefreshLayout = (SwipeRefreshLayout) findViewById(R.id
                 .activity_main_swipe_refresh_layout);
@@ -316,7 +328,7 @@ public class ConversationActivity extends AppCompatActivity {
         TextView tvError = (TextView) findViewById(R.id.tvError);
         pbError = (ProgressBar) findViewById(R.id.pbError);
         RelativeLayout msgLayout = (RelativeLayout) findViewById(R.id.messageLayout);
-        HashMap<String, String> chatRoom = DbEntryService.getChatByTopic(chatTopic);
+        final HashMap<String, String> chatRoom = DbEntryService.getChatByTopic(chatTopic);
         if ("0".equals(chatRoom.get(DbConstants.CHAT_PBK_SENT))) {
             //if ((chatRoom.get(DbConstants.CHAT_MSGK)) == null) {
             tvError.setText(R.string.key_not_created_error);
@@ -363,8 +375,32 @@ public class ConversationActivity extends AppCompatActivity {
             getMessages();
         }
 
-
         Notification.clearNotification(this);
+
+        titleHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(Message msg) {
+                super.handleMessage(msg);
+                ReceipentStatus status = ReceipentStatus.get(msg.what);
+                String title = "";
+                switch (status) {
+                    case UNKNOWN:
+                        title = "<font color=\"" + HtmlUtils.WHITE + "\">" + contactName + "</font>";
+                        break;
+                    case ONLINE:
+                        title = "<font color=\"" + HtmlUtils.GREEN + "\">" + contactName + "</font>";
+                        break;
+                    case OFFLINE:
+                        title = "<font color=\"" + HtmlUtils.WHITE + "\">" + contactName + "</font>";
+                        break;
+                }
+
+                if (actionBar != null) {
+                    actionBar.setTitle(Html.fromHtml(title));
+                }
+
+            }
+        };
     }
 
     @Override
@@ -379,6 +415,26 @@ public class ConversationActivity extends AppCompatActivity {
             finish();
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_contacts, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.addImage:
+                break;
+        }
+        return true;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
     }
 
     private void getMessages() {
@@ -425,7 +481,6 @@ public class ConversationActivity extends AppCompatActivity {
             Log.e(TAG, e.getMessage());
         }
     }
-
 
     public AsyncTask<Void, Void, Boolean> showMessagesTask(final List<HashMap<String, String>>
                                                                    list) {
@@ -601,5 +656,4 @@ public class ConversationActivity extends AppCompatActivity {
         }
 
     }
-
 }

@@ -1,15 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
+        android:id="@+id/item_refresh"
+        android:icon="@android:drawable/ic_menu_rotate"
+        android:title="Reconnect"
+        android:titleCondensed="Reconnect"></item>
+    <item
         android:id="@+id/item_share"
         android:icon="@drawable/share"
         android:title="Share"
-        android:titleCondensed="Share">
-    </item>    <item
+        android:titleCondensed="Share"></item>
+    <item
         android:id="@+id/item_delete"
         android:icon="@drawable/ic_delete_white_24dp"
         android:title="Delete"
-        android:titleCondensed="Delete">
-    </item>
+        android:titleCondensed="Delete"></item>
 
 </menu>

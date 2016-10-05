@@ -72,6 +72,7 @@ public class MsgEncryptOperations {
 
     public static void createMsgKeySpec(Context context, String topic, String opbk, int isSent)
             throws Exception {
+        Log.e(TAG, "OPBK started!");
         MsgEncryptOperations.context = context;
 
         if (opbk == null) {
@@ -124,7 +125,7 @@ public class MsgEncryptOperations {
                 .getBytes());
         AsimService.getSubSendExecutor().submit(task);
 
-        Log.e(TAG, "New key taken. " + topic);
+        Log.e(TAG, "Opbk finished " + topic);
     }
 
  /*   private static void createKeyPairGenerator() throws NoSuchProviderException,

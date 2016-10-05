@@ -58,7 +58,8 @@ public class AsimService extends Service {
 
     public static MqttInit getMqttInit() {
         if (mqttInit == null)
-            mqttInit = new MqttInit(context, "tcp://iot.eclipse.org:1883", Build.ID);
+            mqttInit = new MqttInit(context, "tcp://159.203.63.25:1883", Build.ID);
+        //mqttInit = new MqttInit(context, "tcp://iot.eclipse.org:1883", Build.ID);
         return mqttInit;
     }
 
@@ -93,5 +94,10 @@ public class AsimService extends Service {
     private void createTables() {
         DbTableService.createChatTable();
         DbTableService.createMessageTable();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
     }
 }

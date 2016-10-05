@@ -12,5 +12,4 @@
     <string name="pass_wrong_error">Şifre Yanlış</string>
     <string name="back_press_alert">Çıkmak istediğinize emin misiniz?</string>
     <string name="remove_contact_alert">Bağlantıları silmek istediğinize emin misiniz?</string>
-
 </resources>

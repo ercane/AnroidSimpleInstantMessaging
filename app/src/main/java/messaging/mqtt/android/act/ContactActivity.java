@@ -43,6 +43,7 @@ import messaging.mqtt.android.database.DbEntryService;
 import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.MqttSendMsgTask;
+import messaging.mqtt.android.tasks.MqttSubscribeTask;
 import messaging.mqtt.android.tasks.PbKeyProcessorTask;
 import messaging.mqtt.android.util.BoolFlag;
 import messaging.mqtt.android.util.Notification;
@@ -177,6 +178,25 @@ public class ContactActivity extends AppCompatActivity {
                         startActivity(Intent.createChooser(sharingIntent, "Paylaş"));
                         mode.finish();
                         return true;
+                    case R.id.item_refresh:
+
+                        for (i = (selected.size() - 1); i >= 0; i--) {
+                            if (selected.valueAt(i)) {
+                                try {
+                                    ConversationInfo ci = mAdapter
+                                            .getItem(selected.keyAt(i));
+                                    MqttSubscribeTask subscribeTask = new MqttSubscribeTask(mAdapter, ci);
+                                    AsimService.getSubSendExecutor().submit(subscribeTask);
+                                } catch (Exception e) {
+                                    Toast.makeText(ContactActivity.this, "Conversation with " +
+                                            "cannot be shared. " + e.getMessage(), Toast
+                                            .LENGTH_LONG);
+                                }
+                            }
+                            mAdapter.toggleSelection(i);
+                        }
+                        mode.finish();
+                        return true;
                     default:
                         return false;
                 }
@@ -196,6 +216,12 @@ public class ContactActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        for (ConversationInfo ci : contactInfos) {
+            MqttSendMsgTask task = new MqttSendMsgTask(ci.getRoomTopic(), MqttConstants.MQTT_OFFLINE_SELF.getBytes());
+            AsimService.getSubSendExecutor().submit(task);
+        }
+        //AsimService.getMqttInit().disconnect();
+        stopService(new Intent(this, AsimService.class));
         counter = 0;
     }
 
@@ -211,12 +237,19 @@ public class ContactActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 counter = 0;
+                ConversationInfo ci = contactInfos.get(position);
                 Intent conversation = new Intent(ContactActivity.this, ConversationActivity.class);
                 conversation.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                conversation.putExtra(CONTACT_NAME, contactInfos.get(position).getRoomName());
-                conversation.putExtra(CONTACT_ID, contactInfos.get(position).getId());
-                conversation.putExtra(CONTACT_TOPIC, contactInfos.get(position).getRoomTopic());
+                conversation.putExtra(CONTACT_NAME, ci.getRoomName());
+                conversation.putExtra(CONTACT_ID, ci.getId());
+                conversation.putExtra(CONTACT_TOPIC, ci.getRoomTopic());
                 startActivity(conversation);
+
+                if (ci.getStatus() == ConversationStatus.SUBSCRIBED) {
+                    MqttSendMsgTask task = new MqttSendMsgTask(ci.getRoomTopic(),
+                            MqttConstants.MQTT_ONLINE_CHECK_SELF.getBytes());
+                    AsimService.getSubSendExecutor().submit(task);
+                }
             }
         };
     }
@@ -250,11 +283,13 @@ public class ContactActivity extends AppCompatActivity {
                                 int count = DbEntryService.getUnreadNumber(ci.getId());
                                 ci.setUnreadMsgNumber(count);
 
-                                ci.setStatus(ConversationStatus.UNSUBSCRIBED);
                                 if (AsimService.getMqttInit().subscribe(ci.getRoomTopic())) {
                                     ci.setStatus(ConversationStatus.SUBSCRIBED);
+                                } else {
+                                    ci.setStatus(ConversationStatus.UNSUBSCRIBED);
                                 }
                             } catch (Exception e) {
+                                ci.setStatus(ConversationStatus.UNSUBSCRIBED);
                                 Log.e(TAG, e.getMessage() + "");
                             }
 
