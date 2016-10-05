@@ -58,7 +58,8 @@ public class AsimService extends Service {
 
     public static MqttInit getMqttInit() {
         if (mqttInit == null)
-            mqttInit = new MqttInit(context, "tcp://iot.eclipse.org:1883", Build.ID);
+            mqttInit = new MqttInit(context, "tcp://188.166.61.151:1883", Build.ID);
+        //mqttInit = new MqttInit(context, "tcp://iot.eclipse.org:1883", Build.ID);
         return mqttInit;
     }
 

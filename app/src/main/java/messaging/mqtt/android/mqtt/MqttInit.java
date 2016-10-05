@@ -80,7 +80,7 @@ public class MqttInit {
                 mqttClient.connect();
             }
 
-            mqttClient.subscribe(topic);
+            mqttClient.subscribe(topic + "/+", 2);
             Log.d(TAG, "Mqtt client subscribed to: " + topic);
             return true;
         } catch (MqttException e) {
@@ -102,7 +102,6 @@ public class MqttInit {
             MqttMessage m = new MqttMessage();
             m.setPayload(payload);
             m.setQos(2);
-            m.setRetained(true);
             mqttClient.publish(topic, m);
             Log.d(TAG, "Mqtt client send message to: " + topic);
             return true;
