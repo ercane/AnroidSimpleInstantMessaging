@@ -234,7 +234,7 @@ public class ConversationActivity extends AppCompatActivity {
                             if (adapter.getSelectMap().get(id)) {
                                 ConversationMessageInfo selecteditem = adapter
                                         .getItem(id);
-                                copyMsg += new String(selecteditem.getContent()) + "\n";
+                                copyMsg += new String(selecteditem.getContent()).split(MqttConstants.MQTT_SPLIT_PREFIX)[2] + "\n";
 
                             }
                         }
