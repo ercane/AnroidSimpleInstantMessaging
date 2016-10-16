@@ -5,13 +5,13 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-public class DbTableService {
+public class DbTableService{
 
     public static SQLiteOpenHelper sqoh;
     public static String TAG = "DATABASE";
 
 
-    public static void createChatTable() {
+    public static void createChatTable(){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String CREATE_MESSAGE_TABLE = "CREATE TABLE IF NOT EXISTS " + DbConstants.CHAT_TABLE_NAME + "("
@@ -34,14 +34,16 @@ public class DbTableService {
         }
     }
 
-    public static void createMessageTable() {
+    public static void createMessageTable(){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String CREATE_MESSAGE_TABLE = "CREATE TABLE IF NOT EXISTS " + DbConstants.MESSAGE_TABLE_NAME + "("
                     + DbConstants.MESSAGE_ID + " INTEGER PRIMARY KEY,"
                     + DbConstants.MESSAGE_CHAT_ID + " NUMERIC,"
+                    + DbConstants.MESSAGE_OWN_ID + " TEXT,"
                     + DbConstants.MESSAGE_STATUS + " NUMERIC,"
                     + DbConstants.MESSAGE_TYPE + " NUMERIC,"
+                    + DbConstants.MESSAGE_CONTENT_TYPE + " NUMERIC,"
                     + DbConstants.MESSAGE_SENDING_TIME + " NUMERIC,"
                     + DbConstants.MESSAGE_CONTENT + " TEXT," +
                     " FOREIGN KEY (" + DbConstants.MESSAGE_CHAT_ID + ") REFERENCES " + DbConstants.CHAT_TABLE_NAME + "(" + DbConstants.CHAT_ID + "));";
@@ -53,7 +55,7 @@ public class DbTableService {
         }
     }
 
-    public static void dropTable(String tableName) {
+    public static void dropTable(String tableName){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String DROP_TABLE = "DROP TABLE IF EXISTS " + tableName;

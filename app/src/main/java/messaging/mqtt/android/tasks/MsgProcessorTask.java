@@ -87,9 +87,7 @@ public class MsgProcessorTask implements Runnable{
                 byte[] decryptMsg = MsgEncryptOperations.decryptMsg(topic, payload);
                 String cmiJson = new String(decryptMsg, "UTF-8");
                 ConversationMessageInfo cmi = new Gson().fromJson(cmiJson, ConversationMessageInfo.class);
-                String content = new String(cmi.getContent(), "UTF-8");
-                String[] msgSplit = content.split(MqttConstants.MQTT_SPLIT_PREFIX);
-                if (!Build.ID.equals(msgSplit[1])) {
+                if (!Build.ID.equals(cmi.getOwnId())) {
                     saveMessage(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), cmi);
                 }
             }
@@ -122,8 +120,10 @@ public class MsgProcessorTask implements Runnable{
         cmi.setType(ConversationMessageType.RECEIVED);
         byte[] encrypt = DbEncryptOperations.encrypt(cmi.getContent());
         Long cmiId = DbEntryService.saveMessage(chatId,
+                cmi.getOwnId(),
                 ConversationMessageType.RECEIVED,
                 Base64.encodeToString(encrypt, Base64.DEFAULT),
+                cmi.getContentType(),
                 cmi.getSentReceiveDate().getTime(),
                 ConversationMessageStatus.RECEIVED.getCode());
 

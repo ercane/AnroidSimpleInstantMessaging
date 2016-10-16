@@ -10,23 +10,24 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import messaging.mqtt.android.common.model.ConversationInfo;
+import messaging.mqtt.android.common.ref.ContentType;
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
 import messaging.mqtt.android.common.ref.ConversationMessageType;
 
 
-public class DbEntryService {
+public class DbEntryService{
 
     public static SQLiteOpenHelper sqoh;
     public static String TAG = "DbEntryService";
     private static SQLiteDatabase mainDb;
 
-    public static SQLiteOpenHelper getSqoh() {
+    public static SQLiteOpenHelper getSqoh(){
         //if(sqoh==null)
 
         return sqoh;
     }
 
-    public static SQLiteDatabase getMainDb() {
+    public static SQLiteDatabase getMainDb(){
         if (mainDb == null || !mainDb.isOpen()) {
             mainDb = getSqoh().getWritableDatabase();
         }
@@ -36,7 +37,7 @@ public class DbEntryService {
     /*Save operations
         *******************************
         */
-    public static Long saveChat(ConversationInfo ci) {
+    public static Long saveChat(ConversationInfo ci){
 
         try {
 
@@ -69,14 +70,16 @@ public class DbEntryService {
         }
     }
 
-    public static Long saveMessage(Long chatId, ConversationMessageType type, String content, Long sendingTime,
-                                   Integer status) {
+    public static Long saveMessage(Long chatId, String ownId, ConversationMessageType type, String content, ContentType
+            ctType, Long sendingTime, Integer status){
 
         try {
 
             ContentValues values = new ContentValues();
             values.put(DbConstants.MESSAGE_CHAT_ID, chatId);
+            values.put(DbConstants.MESSAGE_OWN_ID, ownId);
             values.put(DbConstants.MESSAGE_CONTENT, content);
+            values.put(DbConstants.MESSAGE_CONTENT_TYPE, ctType.getCode());
             values.put(DbConstants.MESSAGE_TYPE, type.getCode());
             values.put(DbConstants.MESSAGE_STATUS, status);
             values.put(DbConstants.MESSAGE_SENDING_TIME, sendingTime);
@@ -97,7 +100,7 @@ public class DbEntryService {
     **************************************************************
      */
 
-    public static ArrayList<HashMap<String, String>> getAllChats() {
+    public static ArrayList<HashMap<String, String>> getAllChats(){
         String selectQuery = "SELECT * FROM " + DbConstants.CHAT_TABLE_NAME;
         Cursor cursor = getMainDb().rawQuery(selectQuery, null);
         ArrayList<HashMap<String, String>> contactList = new ArrayList<HashMap<String, String>>();
@@ -117,7 +120,7 @@ public class DbEntryService {
         return contactList;
     }
 
-    public static HashMap<String, String> getChatByTopic(String topic) {
+    public static HashMap<String, String> getChatByTopic(String topic){
         SQLiteDatabase db = sqoh.getReadableDatabase();
         String selectQuery = "SELECT * FROM " + DbConstants.CHAT_TABLE_NAME + " WHERE (" +
                 DbConstants.CHAT_TOPIC + " = '" + topic + "' )";
@@ -136,7 +139,7 @@ public class DbEntryService {
         return chat;
     }
 
-    public static HashMap<String, String> getChatById(Long id) {
+    public static HashMap<String, String> getChatById(Long id){
         SQLiteDatabase db = sqoh.getReadableDatabase();
         String selectQuery = "SELECT * FROM " + DbConstants.CHAT_TABLE_NAME + " WHERE (" +
                 DbConstants.CHAT_ID + " = " + id + " )";
@@ -155,7 +158,7 @@ public class DbEntryService {
         return chat;
     }
 
-    public static HashMap<String, String> getMessageById(Long id) {
+    public static HashMap<String, String> getMessageById(Long id){
         SQLiteDatabase db = sqoh.getReadableDatabase();
         String selectQuery = "SELECT * FROM " + DbConstants.MESSAGE_TABLE_NAME + " WHERE (" +
                 DbConstants.MESSAGE_ID + " =" + id + " )";
@@ -175,7 +178,7 @@ public class DbEntryService {
     }
 
     public static ArrayList<HashMap<String, String>> getAllMessagesByChat(Long chatId, Integer
-            size, Long time) {
+            size, Long time){
         SQLiteDatabase db = sqoh.getReadableDatabase();
         long today = System.currentTimeMillis();
         long hour = 1000 * 60 * 60;
@@ -210,7 +213,7 @@ public class DbEntryService {
     *******************************************************************
      */
 
-    public static void removeChat(Long id) {
+    public static void removeChat(Long id){
         try {
             removeMessages(id);
             SQLiteDatabase db = sqoh.getWritableDatabase();
@@ -222,7 +225,7 @@ public class DbEntryService {
         }
     }
 
-    public static void removeMessages(Long chatId) {
+    public static void removeMessages(Long chatId){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             getMainDb().delete(DbConstants.MESSAGE_TABLE_NAME, DbConstants.MESSAGE_CHAT_ID + " = '" +
@@ -234,7 +237,7 @@ public class DbEntryService {
         }
     }
 
-    public static void removeMessage(Long id) {
+    public static void removeMessage(Long id){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             getMainDb().delete(DbConstants.MESSAGE_TABLE_NAME, DbConstants.MESSAGE_ID + " = " + id + " ",
@@ -253,7 +256,7 @@ public class DbEntryService {
      */
 
 
-    public static boolean updateMessageStatus(Long id, Integer code) {
+    public static boolean updateMessageStatus(Long id, Integer code){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String where = DbConstants.MESSAGE_ID + " = " + id;
@@ -273,7 +276,7 @@ public class DbEntryService {
         }
     }
 
-    public static boolean updateMessagesToReceive(Long id) {
+    public static boolean updateMessagesToReceive(Long id){
         try {
             String where = "(" + DbConstants.MESSAGE_CHAT_ID + " = '" + id + "' AND " +
                     DbConstants.MESSAGE_TYPE + " = " + ConversationMessageType.SENT.getCode() + " AND " +
@@ -296,7 +299,7 @@ public class DbEntryService {
         }
     }
 
-    public static boolean updateSentMessagesToRead(Long id) {
+    public static boolean updateSentMessagesToRead(Long id){
         try {
             String where = "(" + DbConstants.MESSAGE_CHAT_ID + " = " + id + " AND " +
                     DbConstants.MESSAGE_TYPE + " = " + ConversationMessageType.SENT.getCode() + " AND " +
@@ -321,7 +324,7 @@ public class DbEntryService {
         }
     }
 
-    public static boolean updateMessagesToRead(Long date) {
+    public static boolean updateMessagesToRead(Long date){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
 
@@ -343,7 +346,7 @@ public class DbEntryService {
         }
     }
 
-    public static boolean updateChatUnreadNumber(Long id, Integer unread) {
+    public static boolean updateChatUnreadNumber(Long id, Integer unread){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String selectQuery = "UPDATE " + DbConstants.CHAT_TABLE_NAME +
@@ -359,7 +362,7 @@ public class DbEntryService {
         }
     }
 
-    public static boolean updateChatStatus(Long id, Integer code) {
+    public static boolean updateChatStatus(Long id, Integer code){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String selectQuery = "UPDATE " + DbConstants.CHAT_TABLE_NAME +
@@ -376,7 +379,7 @@ public class DbEntryService {
     }
 
 
-    public static void updateChat(Long id, String recipientName, String recipientMail) {
+    public static void updateChat(Long id, String recipientName, String recipientMail){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String where = DbConstants.CHAT_ID + " = '" + recipientMail + "'";
@@ -394,7 +397,7 @@ public class DbEntryService {
         }
     }
 
-    public static void updateChatPbSpec(String topic, String pb, String pr) {
+    public static void updateChatPbSpec(String topic, String pb, String pr){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String where = DbConstants.CHAT_TOPIC + " = '" + topic + "'";
@@ -411,7 +414,7 @@ public class DbEntryService {
         }
     }
 
-    public static void updateChatMsgSpec(String topic, String opb, String msg) {
+    public static void updateChatMsgSpec(String topic, String opb, String msg){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String where = DbConstants.CHAT_TOPIC + " = '" + topic + "'";
@@ -429,7 +432,7 @@ public class DbEntryService {
     }
 
 
-    public static void updateChatPbStatus(String topic, int i) {
+    public static void updateChatPbStatus(String topic, int i){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String where = DbConstants.CHAT_TOPIC + " = '" + topic + "'";
@@ -445,7 +448,7 @@ public class DbEntryService {
         }
     }
 
-    public static int getUnreadNumber(Long id) {
+    public static int getUnreadNumber(Long id){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String select = "select count(*) from " + DbConstants.MESSAGE_TABLE_NAME +
@@ -469,7 +472,7 @@ public class DbEntryService {
     }
 
 
-    public static int getUnreadNumber() {
+    public static int getUnreadNumber(){
         try {
             SQLiteDatabase db = sqoh.getWritableDatabase();
             String select = "select count(*) from " + DbConstants.MESSAGE_TABLE_NAME +

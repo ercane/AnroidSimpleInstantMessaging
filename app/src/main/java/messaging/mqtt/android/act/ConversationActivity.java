@@ -1,9 +1,13 @@
 package messaging.mqtt.android.act;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -21,8 +25,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.AbsListView;
+import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
@@ -31,6 +37,7 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
@@ -40,6 +47,7 @@ import java.util.List;
 import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.adapter.MessageListAdapter;
 import messaging.mqtt.android.common.model.ConversationMessageInfo;
+import messaging.mqtt.android.common.ref.ContentType;
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
 import messaging.mqtt.android.common.ref.ConversationMessageType;
 import messaging.mqtt.android.common.ref.ReceipentStatus;
@@ -52,6 +60,7 @@ import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.ActivityStatus;
 import messaging.mqtt.android.tasks.DbDecyrptTask;
 import messaging.mqtt.android.tasks.MqttSendMsgTask;
+import messaging.mqtt.android.util.FileHelper;
 import messaging.mqtt.android.util.HtmlUtils;
 import messaging.mqtt.android.util.Notification;
 
@@ -289,6 +298,22 @@ public class ConversationActivity extends AppCompatActivity{
             }
         });
 
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id){
+                ConversationMessageInfo ci = adapter.getItem(position);
+                if (ci.getContentType() == ContentType.PICTURE) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity.this);
+                    View v = getLayoutInflater().inflate(R.layout.image_preview, null);
+                    builder.setView(v);
+                    builder.setCancelable(true);
+                    ImageView iv = (ImageView) v.findViewById(R.id.ivPreview);
+                    iv.setImageBitmap(FileHelper.getBitmap(ci.getContent()));
+                    AlertDialog alertDialog = builder.create();
+                    alertDialog.show();
+                }
+            }
+        });
 
         messageText = (EditText) findViewById(R.id.messageText);
         sendMessage = (Button) findViewById(R.id.sendMessage);
@@ -307,6 +332,9 @@ public class ConversationActivity extends AppCompatActivity{
                 cmi.setChatId(chatId);
                 cmi.setStatus(ConversationMessageStatus.CREATED);
                 cmi.setType(ConversationMessageType.SENT);
+                cmi.setContentType(ContentType.TEXT);
+                cmi.setOwnId(Build.ID);
+
 
                 Date date = new Date(System.currentTimeMillis());
                 cmi.setUpdatedDate(date);
@@ -314,8 +342,10 @@ public class ConversationActivity extends AppCompatActivity{
                 byte[] encrypted = getDbEncrypted(cmi.getContent());
                 Long id = DbEntryService.saveMessage(
                         chatId,
+                        cmi.getOwnId(),
                         ConversationMessageType.SENT,
                         Base64.encodeToString(encrypted, Base64.DEFAULT),
+                        ContentType.TEXT,
                         cmi.getUpdatedDate().getTime(),
                         cmi.getStatus().getCode());
                 cmi.setId(id);
@@ -443,7 +473,7 @@ public class ConversationActivity extends AppCompatActivity{
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu){
-        getMenuInflater().inflate(R.menu.menu_contacts, menu);
+        getMenuInflater().inflate(R.menu.menu_conversation, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
@@ -451,9 +481,59 @@ public class ConversationActivity extends AppCompatActivity{
     public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()) {
             case R.id.addImage:
+                Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+                photoPickerIntent.setType("image/jpeg");
+                startActivityForResult(photoPickerIntent, 100);
+
+
                 break;
         }
         return true;
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent){
+        super.onActivityResult(requestCode, resultCode, imageReturnedIntent);
+
+        switch (requestCode) {
+            case 100:
+                if (resultCode == RESULT_OK) {
+                    try {
+                        Uri selectedImage = imageReturnedIntent.getData();
+                        InputStream imageStream = getContentResolver().openInputStream(selectedImage);
+                        byte[] content = new byte[imageStream.available() + 1];
+
+                        imageStream.read(content);
+
+                        ConversationMessageInfo cmi = new ConversationMessageInfo();
+                        cmi.setContent(content);
+                        cmi.setChatId(chatId);
+                        cmi.setStatus(ConversationMessageStatus.CREATED);
+                        cmi.setType(ConversationMessageType.SENT);
+                        cmi.setContentType(ContentType.PICTURE);
+                        cmi.setOwnId(Build.ID);
+                        Date date = new Date(System.currentTimeMillis());
+                        cmi.setUpdatedDate(date);
+                        cmi.setSentReceiveDate(date);
+                        byte[] encrypted = getDbEncrypted(cmi.getContent());
+                        Long id = DbEntryService.saveMessage(
+                                chatId,
+                                cmi.getOwnId(),
+                                ConversationMessageType.SENT,
+                                Base64.encodeToString(encrypted, Base64.DEFAULT),
+                                ContentType.PICTURE,
+                                cmi.getUpdatedDate().getTime(),
+                                cmi.getStatus().getCode());
+                        cmi.setId(id);
+                        messageText.setText("");
+                        adapter.getDecyrptMap().put(cmi.getId(), true);
+                        adapter.add(cmi);
+                        sendMessageTask(cmi).execute();
+                    } catch (Exception e) {
+                        Log.e(TAG, e.getMessage() + "");
+                    }
+                }
+        }
     }
 
     @Override
@@ -545,6 +625,9 @@ public class ConversationActivity extends AppCompatActivity{
                             String code = msg.get(DbConstants.MESSAGE_STATUS);
                             ci.setStatus(ConversationMessageStatus.get(Integer.parseInt(code)));
 
+
+                            String ctCode = msg.get(DbConstants.MESSAGE_CONTENT_TYPE);
+                            ci.setContentType(ContentType.get(Integer.parseInt(ctCode)));
 
                             String temp = msg.get(DbConstants.MESSAGE_CONTENT);
                             byte[] encrypted = Base64.decode(temp.getBytes(), Base64.DEFAULT);

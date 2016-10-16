@@ -26,14 +26,17 @@ import java.util.List;
 import messaging.mqtt.android.R;
 import messaging.mqtt.android.act.ConversationActivity;
 import messaging.mqtt.android.common.model.ConversationMessageInfo;
+import messaging.mqtt.android.common.ref.ContentType;
 import messaging.mqtt.android.common.ref.ConversationMessageStatus;
 import messaging.mqtt.android.common.ref.ConversationMessageType;
 import messaging.mqtt.android.mqtt.MqttConstants;
+import messaging.mqtt.android.util.FileHelper;
 
 
 public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo>{
 
 
+    private static final String TAG = MessageListAdapter.class.getSimpleName();
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
     public static SimpleDateFormat hourFormat = new SimpleDateFormat("HH:mm");
     private HashMap<Long, Boolean> decyrptMap = new HashMap<Long, Boolean>();
@@ -48,6 +51,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo>{
     private List<ConversationMessageInfo> messageList;
     //private SparseBooleanArray mSelectedItemsIds;
     private TextView messageHour;
+    private ImageView ivContent;
     private ImageView messageStatus;
 
     public MessageListAdapter(Context context, int textViewResourceId, List<ConversationMessageInfo> messageList){
@@ -142,23 +146,41 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo>{
         messageLayout = (LinearLayout) row.findViewById(R.id.messageLayout);
         messageDate = (TextView) row.findViewById(R.id.messageDate);
         messageHour = (TextView) row.findViewById(R.id.messageHour);
+        ivContent = (ImageView) row.findViewById(R.id.ivContent);
         messageStatus = (ImageView) row.findViewById(R.id.msgStatus);
-        ConversationMessageInfo coment = getItem(position);
+        final ConversationMessageInfo coment = getItem(position);
 
         decyrptBar = (ProgressBar) row.findViewById(R.id.decryptBar);
         message = (TextView) row.findViewById(R.id.comment);
-        if (decyrptMap.containsKey(coment.getId()) && decyrptMap.get(coment.getId())) {
-            decyrptBar.setVisibility(View.GONE);
-            message.setVisibility(View.VISIBLE);
-            try {
-                String msg = new String(coment.getContent(), "UTF-8");
-                message.setText(msg.split(MqttConstants.MQTT_SPLIT_PREFIX)[2]);
-            } catch (Exception e) {
-                message.setText(new String(coment.getContent()));
+        if (coment.getContentType() == ContentType.TEXT) {
+            if (decyrptMap.containsKey(coment.getId()) && decyrptMap.get(coment.getId())) {
+                decyrptBar.setVisibility(View.GONE);
+                message.setVisibility(View.VISIBLE);
+                ivContent.setVisibility(View.GONE);
+                try {
+                    String msg = new String(coment.getContent(), "UTF-8");
+                    message.setText(msg.split(MqttConstants.MQTT_SPLIT_PREFIX)[2]);
+                } catch (Exception e) {
+                    message.setText(new String(coment.getContent()));
+                }
+            } else {
+                decyrptBar.setVisibility(View.VISIBLE);
+                message.setVisibility(View.GONE);
             }
-        } else {
-            decyrptBar.setVisibility(View.VISIBLE);
-            message.setVisibility(View.GONE);
+        } else if (coment.getContentType() == ContentType.PICTURE) {
+            if (decyrptMap.containsKey(coment.getId()) && decyrptMap.get(coment.getId())) {
+                decyrptBar.setVisibility(View.GONE);
+                message.setVisibility(View.GONE);
+                ivContent.setVisibility(View.VISIBLE);
+                try {
+                    ivContent.setImageBitmap(FileHelper.getBitmap(coment.getContent()));
+                } catch (Exception e) {
+                    message.setText(new String(coment.getContent()));
+                }
+            } else {
+                decyrptBar.setVisibility(View.VISIBLE);
+                message.setVisibility(View.GONE);
+            }
         }
         messageHour.setText(hourFormat.format(coment.getSentReceiveDate()));
 
