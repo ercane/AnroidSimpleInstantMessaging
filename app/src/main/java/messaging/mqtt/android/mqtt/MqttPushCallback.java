@@ -11,22 +11,22 @@ import messaging.mqtt.android.service.AsimService;
 import messaging.mqtt.android.tasks.MsgProcessorTask;
 
 
-public class MqttPushCallback implements MqttCallback {
+public class MqttPushCallback implements MqttCallback{
     private static final String TAG = MqttPushCallback.class.getSimpleName();
     private Context context;
 
 
-    public MqttPushCallback(Context context) {
+    public MqttPushCallback(Context context){
         this.context = context;
     }
 
     @Override
-    public void connectionLost(Throwable cause) {
+    public void connectionLost(Throwable cause){
         Log.e(TAG, cause.getMessage());
     }
 
     @Override
-    public void messageArrived(String topic, MqttMessage message) throws Exception {
+    public void messageArrived(String topic, MqttMessage message) throws Exception{
         Log.e(TAG, "Message arrived: ");
         try {
             MsgProcessorTask task = new MsgProcessorTask(context, topic, message.getPayload());
@@ -37,7 +37,7 @@ public class MqttPushCallback implements MqttCallback {
     }
 
     @Override
-    public void deliveryComplete(IMqttDeliveryToken token) {
+    public void deliveryComplete(IMqttDeliveryToken token){
 
     }
 

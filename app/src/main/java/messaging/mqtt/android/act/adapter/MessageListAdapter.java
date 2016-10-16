@@ -31,7 +31,7 @@ import messaging.mqtt.android.common.ref.ConversationMessageType;
 import messaging.mqtt.android.mqtt.MqttConstants;
 
 
-public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
+public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo>{
 
 
     public static SimpleDateFormat dateFormat = new SimpleDateFormat("dd.MM.yyyy");
@@ -50,7 +50,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
     private TextView messageHour;
     private ImageView messageStatus;
 
-    public MessageListAdapter(Context context, int textViewResourceId, List<ConversationMessageInfo> messageList) {
+    public MessageListAdapter(Context context, int textViewResourceId, List<ConversationMessageInfo> messageList){
         super(context, textViewResourceId, messageList);
         mContext = context;
         this.messageList = messageList;
@@ -59,21 +59,21 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
         setDateList(messageList);
     }
 
-    public HashMap<Long, Boolean> getSelectMap() {
+    public HashMap<Long, Boolean> getSelectMap(){
         return selectMap;
     }
 
     @Override
-    public void notifyDataSetChanged() {
+    public void notifyDataSetChanged(){
         setDateList(messageList);
         super.notifyDataSetChanged();
     }
 
-    public HashMap<Long, Boolean> getDecyrptMap() {
+    public HashMap<Long, Boolean> getDecyrptMap(){
         return decyrptMap;
     }
 
-    public void setDateList(List<ConversationMessageInfo> messages) {
+    public void setDateList(List<ConversationMessageInfo> messages){
         dateList.clear();
         int i = 0;
         HashMap<String, List<ConversationMessageInfo>> groupByDate = new HashMap<String, List<ConversationMessageInfo>>();
@@ -103,25 +103,26 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
     }
 
     @Override
-    public void add(ConversationMessageInfo object) {
+    public void add(ConversationMessageInfo object){
         super.add(object);
         setDateList(messageList);
         //Collections.sort(messageList, ConversationMessageActivity.comparator);
         sort(ConversationActivity.comparator);
     }
 
-    public int getCount() {
+    public int getCount(){
         return messageList.size();
     }
 
-    public ConversationMessageInfo getItem(int index) {
-        if (index >= 0 || index < messageList.size() - 1)
+    public ConversationMessageInfo getItem(int index){
+        if (index >= 0 || index < messageList.size() - 1) {
             return messageList.get(index);
-        else
+        } else {
             throw new InvalidParameterException("Index must be between 0-" + (messageList.size() - 1));
+        }
     }
 
-    public ConversationMessageInfo getItem(Long id) {
+    public ConversationMessageInfo getItem(Long id){
         for (ConversationMessageInfo cmi : messageList) {
             if (cmi.getId() == id) {
                 return cmi;
@@ -130,7 +131,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
         return null;
     }
 
-    public View getView(final int position, View convertView, ViewGroup parent) {
+    public View getView(final int position, View convertView, ViewGroup parent){
         View row = convertView;
         if (row == null) {
             LayoutInflater inflater = (LayoutInflater) this.getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -254,14 +255,14 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
     }
 
     @Override
-    public void remove(ConversationMessageInfo object) {
+    public void remove(ConversationMessageInfo object){
         int size = messageList.size();
         super.remove(object);
         size = messageList.size();
         notifyDataSetChanged();
     }
 
-    public void toggleSelection(int position) {
+    public void toggleSelection(int position){
         ConversationMessageInfo item = getItem(position);
         if (!selectMap.containsKey(item.getId())) {
             selectMap.put(item.getId(), false);
@@ -272,7 +273,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
         notifyDataSetChanged();
     }
 
-    public void removeSelection() {
+    public void removeSelection(){
         selectMap = new HashMap<>();
         notifyDataSetChanged();
     }
@@ -292,7 +293,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
     /*public SparseBooleanArray getSelectedIds() {
         return mSelectedItemsIds;
     }*/
-    public List<Long> getSelectedIds() {
+    public List<Long> getSelectedIds(){
         List<Long> list = new ArrayList<>();
         for (Long id : selectMap.keySet()) {
             list.add(id);
@@ -300,7 +301,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
         return list;
     }
 
-    public ColorFilter getColorFilter(String color) {
+    public ColorFilter getColorFilter(String color){
         int iColor = Color.parseColor(color);
         int red = (iColor & 0xFF0000) / 0xFFFF;
         int green = (iColor & 0xFF00) / 0xFF;
@@ -313,11 +314,11 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
         return colorFilter;
     }
 
-    public List<ConversationMessageInfo> getMessageList() {
+    public List<ConversationMessageInfo> getMessageList(){
         return messageList;
     }
 
-    public void setStatus(Long id, ConversationMessageStatus status) {
+    public void setStatus(Long id, ConversationMessageStatus status){
         for (ConversationMessageInfo cmi : messageList) {
             if (cmi.getId().equals(id)) {
                 cmi.setStatus(status);
@@ -327,7 +328,7 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
         notifyDataSetChanged();
     }
 
-    public void setId(Long tempId, Long id) {
+    public void setId(Long tempId, Long id){
         for (ConversationMessageInfo cmi : messageList) {
             if (tempId.equals(cmi.getId())) {
                 cmi.setId(id);
@@ -338,17 +339,18 @@ public class MessageListAdapter extends ArrayAdapter<ConversationMessageInfo> {
         notifyDataSetChanged();
     }
 
-    public void setStatusToReceive() {
+    public void setStatusToReceive(Long msgId){
         for (ConversationMessageInfo cmi : messageList) {
             if (ConversationActivity.chatId == cmi.getChatId() &&
-                    cmi.getStatus() == ConversationMessageStatus.POST) {
+                    cmi.getStatus() == ConversationMessageStatus.POST &&
+                    cmi.getId() == msgId) {
                 cmi.setStatus(ConversationMessageStatus.RECEIVED);
             }
         }
         notifyDataSetChanged();
     }
 
-    public void setStatusToRead() {
+    public void setStatusToRead(){
         for (ConversationMessageInfo cmi : messageList) {
             if (ConversationActivity.chatId == cmi.getChatId() && (
                     cmi.getStatus() == ConversationMessageStatus.RECEIVED ||

@@ -8,7 +8,8 @@ import android.os.Message;
 import android.util.Base64;
 import android.util.Log;
 
-import java.util.Date;
+import com.google.gson.Gson;
+
 import java.util.HashMap;
 
 import messaging.mqtt.android.act.ConversationActivity;
@@ -23,7 +24,7 @@ import messaging.mqtt.android.database.DbEntryService;
 import messaging.mqtt.android.mqtt.MqttConstants;
 import messaging.mqtt.android.service.AsimService;
 
-public class MsgProcessorTask implements Runnable {
+public class MsgProcessorTask implements Runnable{
 
     private static final String TAG = MsgProcessorTask.class.getSimpleName();
     private Context context;
@@ -31,7 +32,7 @@ public class MsgProcessorTask implements Runnable {
     private byte[] payload;
     private Long time;
 
-    public MsgProcessorTask(Context context, String topic, byte[] payload) {
+    public MsgProcessorTask(Context context, String topic, byte[] payload){
         this.context = context;
         this.topic = topic;
         this.payload = payload;
@@ -39,7 +40,7 @@ public class MsgProcessorTask implements Runnable {
     }
 
     @Override
-    public void run() {
+    public void run(){
         try {
             String payloadMsg = new String(payload, "UTF-8");
             Log.e(TAG, "Message arrived: " + payloadMsg);
@@ -47,20 +48,28 @@ public class MsgProcessorTask implements Runnable {
 
             String[] split = payloadMsg.split(MqttConstants.MQTT_SPLIT_PREFIX);
             if (payloadMsg.startsWith(MqttConstants.MQTT_PB)) {
-                if (!Build.ID.equals(split[1]))
+                if (!Build.ID.equals(split[1])) {
                     MsgEncryptOperations.createMsgKeySpec(context, topic, split[2],
                             Integer.parseInt(chatByTopic.get(DbConstants.CHAT_PBK_SENT)));
+                }
             } else if (payloadMsg.startsWith(MqttConstants.MQTT_PB_TAKEN)) {
                 if (!Build.ID.equals(split[1])) {
                     DbEntryService.updateChatPbStatus(topic, 1);
                 }
             } else if (payloadMsg.startsWith(MqttConstants.MQTT_READ_ALL)) {
                 if (!Build.ID.equals(split[1])) {
-                    changeStatus(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), ConversationMessageStatus.READ);
+                    changeStatus(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), null,
+                            ConversationMessageStatus.READ);
                 }
             } else if (payloadMsg.startsWith(MqttConstants.MQTT_RECEIVE_ALL)) {
                 if (!Build.ID.equals(split[1])) {
-                    changeStatus(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), ConversationMessageStatus.RECEIVED);
+                    if (split.length > 2) {
+                        changeStatus(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), split[2],
+                                ConversationMessageStatus.RECEIVED);
+                    } else {
+                        changeStatus(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), null,
+                                ConversationMessageStatus.RECEIVED);
+                    }
                 }
             } else if (payloadMsg.startsWith(MqttConstants.MQTT_ONLINE_APPROVE)) {
                 if (!Build.ID.equals(split[1])) {
@@ -76,10 +85,12 @@ public class MsgProcessorTask implements Runnable {
                 }
             } else {
                 byte[] decryptMsg = MsgEncryptOperations.decryptMsg(topic, payload);
-                String msg = new String(decryptMsg, "UTF-8");
-                String[] msgSplit = msg.split(MqttConstants.MQTT_SPLIT_PREFIX);
+                String cmiJson = new String(decryptMsg, "UTF-8");
+                ConversationMessageInfo cmi = new Gson().fromJson(cmiJson, ConversationMessageInfo.class);
+                String content = new String(cmi.getContent(), "UTF-8");
+                String[] msgSplit = content.split(MqttConstants.MQTT_SPLIT_PREFIX);
                 if (!Build.ID.equals(msgSplit[1])) {
-                    saveMessage(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), msg);
+                    saveMessage(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), cmi);
                 }
             }
         } catch (Exception e) {
@@ -87,53 +98,51 @@ public class MsgProcessorTask implements Runnable {
         }
     }
 
-    private void checkOnline() {
+    private void checkOnline(){
         MqttSendMsgTask task = new MqttSendMsgTask(topic, MqttConstants.MQTT_ONLINE_APPROVE_SELF.getBytes());
         AsimService.getSubSendExecutor().submit(task);
     }
 
-    private void applyOffline() {
+    private void applyOffline(){
         Handler handler = ConversationActivity.getTitleHandler();
         if (handler != null && topic.equals(ConversationActivity.chatTopic)) {
             handler.sendEmptyMessage(ReceipentStatus.OFFLINE.getCode());
         }
     }
 
-    private synchronized void applyOnline() {
+    private synchronized void applyOnline(){
         Handler handler = ConversationActivity.getTitleHandler();
         if (handler != null && topic.equals(ConversationActivity.chatTopic)) {
             handler.sendEmptyMessage(ReceipentStatus.ONLINE.getCode());
         }
     }
 
-    private synchronized void saveMessage(Long chatId, String msg) throws Exception {
-        ConversationMessageInfo cmi = new ConversationMessageInfo();
-        cmi.setContent(msg.getBytes());
+    private synchronized void saveMessage(Long chatId, ConversationMessageInfo cmi) throws Exception{
         cmi.setChatId(chatId);
         cmi.setType(ConversationMessageType.RECEIVED);
-        Long time = System.currentTimeMillis();
-        byte[] encrypt = DbEncryptOperations.encrypt(msg.getBytes());
+        byte[] encrypt = DbEncryptOperations.encrypt(cmi.getContent());
         Long cmiId = DbEntryService.saveMessage(chatId,
                 ConversationMessageType.RECEIVED,
                 Base64.encodeToString(encrypt, Base64.DEFAULT),
-                time,
+                cmi.getSentReceiveDate().getTime(),
                 ConversationMessageStatus.RECEIVED.getCode());
 
-        cmi.setId(cmiId);
-        cmi.setSentReceiveDate(new Date(time));
-        MqttSendMsgTask task = new MqttSendMsgTask(topic, MqttConstants.MQTT_RECEIVE_ALL_SELF.getBytes());
+        MqttSendMsgTask task = new MqttSendMsgTask(topic, (MqttConstants.MQTT_RECEIVE_ALL_SELF + cmi.getId()).getBytes());
         AsimService.getSubSendExecutor().submit(task);
 
+        cmi.setId(cmiId);
         switch (ConversationActivity.status) {
             case CREATED:
             case STARTED:
             case RESUMED:
             case RESTARTED:
-                Bundle b = new Bundle();
-                b.putSerializable(ConversationActivity.ADD_MESSAGE, cmi);
-                Message m = new Message();
-                m.setData(b);
-                ConversationActivity.getAddHandler().sendMessage(m);
+                if (ConversationActivity.getAddHandler() != null) {
+                    Bundle b = new Bundle();
+                    b.putSerializable(ConversationActivity.ADD_MESSAGE, cmi);
+                    Message m = new Message();
+                    m.setData(b);
+                    ConversationActivity.getAddHandler().sendMessage(m);
+                }
                 break;
             case PAUSED:
             case STOPPED:
@@ -145,35 +154,32 @@ public class MsgProcessorTask implements Runnable {
 
     }
 
-    private void changeStatus(Long chatId, ConversationMessageStatus status) {
-        switch (ConversationActivity.status) {
+    private void changeStatus(Long chatId, String msgId, ConversationMessageStatus status){
+        Bundle b = new Bundle();
+        switch (status) {
             case CREATED:
-            case STARTED:
-            case RESUMED:
-            case RESTARTED:
-                Bundle b = new Bundle();
-                switch (status) {
-                    case CREATED:
-                        break;
-                    case POST:
-                        break;
-                    case RECEIVED:
-                        b.putSerializable(ConversationActivity.RECEIVE_MESSAGE, chatId);
-                        break;
-                    case READ:
-                        b.putSerializable(ConversationActivity.READ_MESSAGE, chatId);
-                        break;
-                    case FAILED:
-                        break;
-                }
-                Message m = new Message();
-                m.setData(b);
-                ConversationActivity.getAddHandler().sendMessage(m);
                 break;
-            case PAUSED:
-            case STOPPED:
-            case DESTROYED:
+            case POST:
+                break;
+            case RECEIVED:
+                b.putSerializable(ConversationActivity.RECEIVE_MESSAGE, chatId);
+                if (msgId != null) {
+                    b.putSerializable(ConversationActivity.RECEIVE_ID, Long.parseLong(msgId));
+                }
+                break;
+            case READ:
+                b.putSerializable(ConversationActivity.READ_MESSAGE, chatId);
+                if (msgId != null) {
+                    DbEntryService.updateMessageStatus(Long.parseLong(msgId), ConversationMessageStatus.READ.getCode());
+                }
+                break;
+            case FAILED:
                 break;
         }
+
+        Message m = new Message();
+        m.setData(b);
+        ConversationActivity.getStatusHandler().sendMessage(m);
+
     }
 }
