@@ -4,6 +4,8 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
 import java.io.BufferedInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,6 +35,10 @@ public class FileHelper{
     }
 
     public static Bitmap getBitmap(byte[] byteArray){
-        return BitmapFactory.decodeByteArray(byteArray, 0, byteArray.length);
+        ByteArrayInputStream imageStream=new ByteArrayInputStream(byteArray);
+        Bitmap bmp = BitmapFactory.decodeStream(imageStream);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        bmp.compress(Bitmap.CompressFormat.JPEG, 70, bos);
+        return bmp;
     }
 }

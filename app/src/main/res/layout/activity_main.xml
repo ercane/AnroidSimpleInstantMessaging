@@ -30,7 +30,7 @@
             android:id="@+id/textView3"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_gravity="center_vertical|center_horizontal"
             android:text="Android Simple Instant Messaging"
             android:textAlignment="center"
             android:textAppearance="?android:attr/textAppearanceLarge"

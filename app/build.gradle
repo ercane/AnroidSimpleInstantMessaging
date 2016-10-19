@@ -5,7 +5,7 @@ android {
     buildToolsVersion '22.0.1'
 
     defaultConfig {
-        applicationId "android.simple.instant.messaging2"
+        applicationId "android.simple.instant.messaging"
         minSdkVersion 14
         targetSdkVersion 17
         versionCode 2

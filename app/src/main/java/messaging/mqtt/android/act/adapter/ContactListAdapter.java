@@ -87,12 +87,6 @@ public class ContactListAdapter extends ArrayAdapter<ConversationInfo> {
         super.add(object);
     }
 
-    @Override
-    public void remove(ConversationInfo object) {
-        mContacts.remove(object);
-        notifyDataSetChanged();
-    }
-
     public void toggleSelection(int position) {
         selectView(position, !mSelectedItemsIds.get(position));
     }
