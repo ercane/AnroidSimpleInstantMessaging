@@ -46,7 +46,6 @@ import messaging.mqtt.android.tasks.MqttSendMsgTask;
 import messaging.mqtt.android.tasks.MqttSubscribeTask;
 import messaging.mqtt.android.tasks.PbKeyProcessorTask;
 import messaging.mqtt.android.util.BoolFlag;
-import messaging.mqtt.android.util.Notification;
 
 public class ContactActivity extends AppCompatActivity {
 
@@ -210,7 +209,7 @@ public class ContactActivity extends AppCompatActivity {
 
 
         });
-        Notification.clearNotification(this);
+        //Notification.clearNotification(this);
     }
 
     @Override

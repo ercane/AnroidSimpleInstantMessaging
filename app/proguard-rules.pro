@@ -10,6 +10,7 @@
 # Add any project specific keep options here:
 -keep class org.spongycastle.** { *; }
 -keep class org.eclipse.paho.** { *; }
+-keep class com.google.gson.** { *; }
 -dontwarn org.spongycastle.**
 
 

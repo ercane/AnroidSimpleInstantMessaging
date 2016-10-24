@@ -38,6 +38,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -66,7 +67,6 @@ import messaging.mqtt.android.tasks.DbDecyrptTask;
 import messaging.mqtt.android.tasks.MqttSendMsgTask;
 import messaging.mqtt.android.util.FileHelper;
 import messaging.mqtt.android.util.HtmlUtils;
-import messaging.mqtt.android.util.Notification;
 
 public class ConversationActivity extends AppCompatActivity {
 
@@ -416,31 +416,35 @@ public class ConversationActivity extends AppCompatActivity {
             getMessages();
         }
 
-        Notification.clearNotification(this);
+        //Notification.clearNotification(this);
 
         titleHandler = new Handler(Looper.getMainLooper()) {
             @Override
             public void handleMessage(Message msg) {
                 super.handleMessage(msg);
-                ReceipentStatus status = ReceipentStatus.get(msg.what);
-                String title = "";
-                switch (status) {
-                    case UNKNOWN:
-                        title = "<font color=\"" + HtmlUtils.WHITE + "\">" + contactName +
-                                "</font>";
-                        break;
-                    case ONLINE:
-                        title = "<font color=\"" + HtmlUtils.GREEN + "\">" + contactName +
-                                "</font>";
-                        break;
-                    case OFFLINE:
-                        title = "<font color=\"" + HtmlUtils.WHITE + "\">" + contactName +
-                                "</font>";
-                        break;
-                }
+                try {
+                    ReceipentStatus status = ReceipentStatus.get(msg.what);
+                    String title = "";
+                    switch (status) {
+                        case UNKNOWN:
+                            title = "<font color=\"" + HtmlUtils.WHITE + "\">" + contactName +
+                                    "</font>";
+                            break;
+                        case ONLINE:
+                            title = "<font color=\"" + HtmlUtils.GREEN + "\">" + contactName +
+                                    "</font>";
+                            break;
+                        case OFFLINE:
+                            title = "<font color=\"" + HtmlUtils.WHITE + "\">" + contactName +
+                                    "</font>";
+                            break;
+                    }
 
-                if (actionBar != null) {
-                    actionBar.setTitle(Html.fromHtml(title));
+                    if (actionBar != null) {
+                        actionBar.setTitle(Html.fromHtml(title));
+                    }
+                } catch (Exception e) {
+                    Log.e(TAG, e.getMessage() + "");
                 }
 
             }
@@ -522,7 +526,8 @@ public class ConversationActivity extends AppCompatActivity {
                         //byte[] content = new byte[imageStream.available() + 1];
                         //imageStream.read(content);
                         Bitmap bitmap = BitmapFactory.decodeStream(imageStream);
-                        Bitmap bmp = Bitmap.createScaledBitmap(bitmap, bitmap.getWidth()/2, bitmap.getHeight()/2, true);
+                        Bitmap bmp = Bitmap.createScaledBitmap(bitmap, bitmap.getWidth() / 2,
+                                bitmap.getHeight() / 2, true);
                         ByteArrayOutputStream bos = new ByteArrayOutputStream();
                         bmp.compress(Bitmap.CompressFormat.JPEG, 70, bos);
                         byte[] content = bos.toByteArray();
@@ -566,16 +571,18 @@ public class ConversationActivity extends AppCompatActivity {
 
     private void getMessages() {
         try {
-            final ArrayList<HashMap<String, String>> first = DbEntryService.getAllMessagesByChat
-                    (chatId, SHOW_LIMIT, messageLimitTime);
+            final ArrayList<HashMap<String, String>> allMessages = DbEntryService
+                    .getAllMessagesByChat
+                            (chatId, SHOW_LIMIT, messageLimitTime);
             String temp = null;
-            if (first.size() > 0) {
-                temp = first.get(first.size() - 1).get(DbConstants.MESSAGE_SENDING_TIME);
+            if (allMessages.size() > 0) {
+                temp = allMessages.get(allMessages.size() - 1).get(DbConstants
+                        .MESSAGE_SENDING_TIME);
             }
             messageLimitTime = Long.parseLong(temp);
 
-            showMessagesTask(first).execute();
-            if (first.size() == SHOW_LIMIT) {
+            showMessagesTask(allMessages).execute();
+            if (allMessages.size() == SHOW_LIMIT) {
                 mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener
                         () {
                     @Override
@@ -693,6 +700,7 @@ public class ConversationActivity extends AppCompatActivity {
                     }
                     return true;
                 } catch (Exception e) {
+                    Log.e(TAG, e.getMessage());
                     return false;
                 }
             }
@@ -725,7 +733,8 @@ public class ConversationActivity extends AppCompatActivity {
                 adapter.sort(comparator);
                 adapter.notifyDataSetChanged();
                 //adapter.sort(comparator);
-                progress.dismiss();
+                if (progress != null)
+                    progress.dismiss();
             }
 
             private String getListString(List<Long> ids) {
@@ -749,10 +758,17 @@ public class ConversationActivity extends AppCompatActivity {
 
             @Override
             protected Boolean doInBackground(Void... params) {
-                String json = new Gson().toJson(first);
-                byte[] content = json.getBytes();
-                byte[] msgEncrypted = getMsgEncrypted(content);
-                return AsimService.getMqttInit().sendMessage(chatTopic, msgEncrypted);
+                try {
+                    GsonBuilder builder = new GsonBuilder();
+                    Gson gson = builder.create();
+                    String json = gson.toJson(first);
+                    byte[] content = json.getBytes();
+                    byte[] msgEncrypted = getMsgEncrypted(content);
+                    return AsimService.getMqttInit().sendMessage(chatTopic, msgEncrypted);
+                } catch (Exception e) {
+                    Log.e(TAG, e.getMessage() + "");
+                    return false;
+                }
             }
 
             @Override
