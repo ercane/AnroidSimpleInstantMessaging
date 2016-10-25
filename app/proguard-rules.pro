@@ -11,6 +11,10 @@
 -keep class org.spongycastle.** { *; }
 -keep class org.eclipse.paho.** { *; }
 -keep class com.google.gson.** { *; }
+-keep class messaging.mqtt.android.common.model.ConversationMessageInfo { *; }
+-keep class messaging.mqtt.android.common.ref.ContentType { *; }
+-keep class messaging.mqtt.android.common.ref.ConversationMessageStatus { *; }
+-keep class messaging.mqtt.android.common.ref.ConversationMessageType { *; }
 -dontwarn org.spongycastle.**
 
 
