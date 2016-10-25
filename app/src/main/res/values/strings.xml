@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">A.S.I.M.</string>
+    <string name="app_name">A.S.I.M. 2</string>
     <string name="title_activity_contacts">ContactsActivity</string>
     <string name="main_create_pass_msg">Lütfen sadece rakamlardan oluşan en az 6 haneli bir şifre oluşturun.</string>
     <string name="key_not_created_error">Anahtarlar oluşturulamadı. Yeniden deneyiniz.</string>

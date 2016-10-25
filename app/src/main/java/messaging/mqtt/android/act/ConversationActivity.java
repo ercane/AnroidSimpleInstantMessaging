@@ -68,7 +68,7 @@ import messaging.mqtt.android.tasks.MqttSendMsgTask;
 import messaging.mqtt.android.util.FileHelper;
 import messaging.mqtt.android.util.HtmlUtils;
 
-public class ConversationActivity extends AppCompatActivity {
+public class ConversationActivity extends AppCompatActivity{
 
     public static final String ADD_MESSAGE = "AddMessage";
     public static final String READ_MESSAGE = "ReadMessage";
@@ -78,9 +78,9 @@ public class ConversationActivity extends AppCompatActivity {
     public static String chatTopic;
     public static ActivityStatus status;
     public static Comparator<ConversationMessageInfo> comparator = new
-            Comparator<ConversationMessageInfo>() {
+            Comparator<ConversationMessageInfo>(){
                 @Override
-                public int compare(ConversationMessageInfo first, ConversationMessageInfo second) {
+                public int compare(ConversationMessageInfo first, ConversationMessageInfo second){
                     return first.getSentReceiveDate().compareTo(second.getSentReceiveDate());
                 }
             };
@@ -101,7 +101,7 @@ public class ConversationActivity extends AppCompatActivity {
     private ProgressBar pbError;
 
 
-    public static byte[] getDbEncrypted(byte[] content) {
+    public static byte[] getDbEncrypted(byte[] content){
         String def = "CANNOT ENCRYPTED";
         byte[] encrypted = def.getBytes();
         try {
@@ -112,7 +112,7 @@ public class ConversationActivity extends AppCompatActivity {
         return encrypted;
     }
 
-    public static byte[] getDbDecrypted(byte[] content) {
+    public static byte[] getDbDecrypted(byte[] content){
         String def = "CANNOT DECRYPTED";
         byte[] decyrpted = def.getBytes();
         try {
@@ -123,15 +123,15 @@ public class ConversationActivity extends AppCompatActivity {
         return decyrpted;
     }
 
-    public static Handler getAddHandler() {
+    public static Handler getAddHandler(){
         return addHandler;
     }
 
-    public static Handler getStatusHandler() {
+    public static Handler getStatusHandler(){
         if (statusHandler == null) {
-            statusHandler = new Handler(Looper.getMainLooper()) {
+            statusHandler = new Handler(Looper.getMainLooper()){
                 @Override
-                public void handleMessage(Message msg) {
+                public void handleMessage(Message msg){
                     try {
                         Bundle data = msg.getData();
                         if (data.getSerializable(RECEIVE_MESSAGE) != null) {
@@ -159,7 +159,7 @@ public class ConversationActivity extends AppCompatActivity {
         return statusHandler;
     }
 
-    public static byte[] getMsgEncrypted(byte[] content) {
+    public static byte[] getMsgEncrypted(byte[] content){
         String def = "CANNOT ENCRYPTED";
         byte[] encrypted = def.getBytes();
         try {
@@ -170,7 +170,7 @@ public class ConversationActivity extends AppCompatActivity {
         return encrypted;
     }
 
-    public static byte[] getMsgDecrypted(byte[] content) {
+    public static byte[] getMsgDecrypted(byte[] content){
         String def = "CANNOT DECRYPT";
         byte[] decyrpted = def.getBytes();
         try {
@@ -181,12 +181,12 @@ public class ConversationActivity extends AppCompatActivity {
         return decyrpted;
     }
 
-    public static Handler getTitleHandler() {
+    public static Handler getTitleHandler(){
         return titleHandler;
     }
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_conversation);
 
@@ -212,12 +212,12 @@ public class ConversationActivity extends AppCompatActivity {
         listView.setStackFromBottom(true);
         listView.setDivider(null);
         listView.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE_MODAL);
-        listView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener() {
+        listView.setMultiChoiceModeListener(new AbsListView.MultiChoiceModeListener(){
             private int nr = 0;
 
             @Override
             public void onItemCheckedStateChanged(ActionMode mode, int position, long id, boolean
-                    checked) {
+                    checked){
                 final int checkedCount = listView.getCheckedItemCount();
                 mode.setTitle(checkedCount + " Selected");
                 adapter.toggleSelection(position);
@@ -225,7 +225,7 @@ public class ConversationActivity extends AppCompatActivity {
             }
 
             @Override
-            public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+            public boolean onActionItemClicked(ActionMode mode, MenuItem item){
                 List<Long> selected;
                 switch (item.getItemId()) {
                     case R.id.item_delete:
@@ -284,7 +284,7 @@ public class ConversationActivity extends AppCompatActivity {
             }
 
             @Override
-            public boolean onCreateActionMode(ActionMode mode, Menu menu) {
+            public boolean onCreateActionMode(ActionMode mode, Menu menu){
                 mode.getMenuInflater().inflate(R.menu.chat_contextual, menu);
                 ConversationActivity.this.getWindow().setSoftInputMode(WindowManager.LayoutParams
                         .SOFT_INPUT_STATE_ALWAYS_HIDDEN);
@@ -293,21 +293,21 @@ public class ConversationActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onDestroyActionMode(ActionMode mode) {
+            public void onDestroyActionMode(ActionMode mode){
                 // TODO Auto-generated method stub
                 adapter.removeSelection();
             }
 
             @Override
-            public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+            public boolean onPrepareActionMode(ActionMode mode, Menu menu){
                 // TODO Auto-generated method stub
                 return false;
             }
         });
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener(){
             @Override
-            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id){
                 ConversationMessageInfo ci = adapter.getItem(position);
                 if (ci.getContentType() == ContentType.PICTURE) {
                     AlertDialog.Builder builder = new AlertDialog.Builder(ConversationActivity
@@ -325,9 +325,9 @@ public class ConversationActivity extends AppCompatActivity {
 
         messageText = (EditText) findViewById(R.id.messageText);
         sendMessage = (Button) findViewById(R.id.sendMessage);
-        sendMessage.setOnClickListener(new View.OnClickListener() {
+        sendMessage.setOnClickListener(new View.OnClickListener(){
             @Override
-            public void onClick(View v) {
+            public void onClick(View v){
                 sendMessage.setEnabled(false);
                 if (messageText.getText() == null || "".equals(messageText.getText().toString())) {
                     sendMessage.setEnabled(true);
@@ -418,9 +418,9 @@ public class ConversationActivity extends AppCompatActivity {
 
         //Notification.clearNotification(this);
 
-        titleHandler = new Handler(Looper.getMainLooper()) {
+        titleHandler = new Handler(Looper.getMainLooper()){
             @Override
-            public void handleMessage(Message msg) {
+            public void handleMessage(Message msg){
                 super.handleMessage(msg);
                 try {
                     ReceipentStatus status = ReceipentStatus.get(msg.what);
@@ -450,9 +450,9 @@ public class ConversationActivity extends AppCompatActivity {
             }
         };
 
-        addHandler = new Handler(Looper.getMainLooper()) {
+        addHandler = new Handler(Looper.getMainLooper()){
             @Override
-            public void handleMessage(Message msg) {
+            public void handleMessage(Message msg){
                 try {
                     Bundle data = msg.getData();
                     if (data.getSerializable(ADD_MESSAGE) != null) {
@@ -476,13 +476,13 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed() {
+    public void onBackPressed(){
         super.onBackPressed();
         adapter = null;
     }
 
     @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
+    public boolean onKeyDown(int keyCode, KeyEvent event){
         if (keyCode == KeyEvent.KEYCODE_BACK) {
             finish();
         }
@@ -490,13 +490,13 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
+    public boolean onCreateOptionsMenu(Menu menu){
         getMenuInflater().inflate(R.menu.menu_conversation, menu);
         return super.onCreateOptionsMenu(menu);
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(MenuItem item){
         switch (item.getItemId()) {
             case R.id.addImage:
                 Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
@@ -510,7 +510,7 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent) {
+    protected void onActivityResult(int requestCode, int resultCode, Intent imageReturnedIntent){
         super.onActivityResult(requestCode, resultCode, imageReturnedIntent);
 
         switch (requestCode) {
@@ -565,11 +565,11 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onDestroy() {
+    protected void onDestroy(){
         super.onDestroy();
     }
 
-    private void getMessages() {
+    private void getMessages(){
         try {
             final ArrayList<HashMap<String, String>> allMessages = DbEntryService
                     .getAllMessagesByChat
@@ -584,9 +584,9 @@ public class ConversationActivity extends AppCompatActivity {
             showMessagesTask(allMessages).execute();
             if (allMessages.size() == SHOW_LIMIT) {
                 mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener
-                        () {
+                        (){
                     @Override
-                    public void onRefresh() {
+                    public void onRefresh(){
                         if (mode != null) {
                             mode.finish();
                         }
@@ -606,9 +606,9 @@ public class ConversationActivity extends AppCompatActivity {
             } else {
                 mSwipeRefreshLayout.setRefreshing(false);
                 mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener
-                        () {
+                        (){
                     @Override
-                    public void onRefresh() {
+                    public void onRefresh(){
                         mSwipeRefreshLayout.setRefreshing(false);
                     }
                 });
@@ -619,8 +619,8 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     public AsyncTask<Void, Void, Boolean> showMessagesTask(final List<HashMap<String, String>>
-                                                                   list) {
-        return new AsyncTask<Void, Void, Boolean>() {
+                                                                   list){
+        return new AsyncTask<Void, Void, Boolean>(){
             Boolean isThereUnread = false;
             int counter = 0;
             ProgressDialog progress;
@@ -628,7 +628,7 @@ public class ConversationActivity extends AppCompatActivity {
             List<Long> ids = new ArrayList<>();
 
             @Override
-            protected void onPreExecute() {
+            protected void onPreExecute(){
                 progress = new ProgressDialog(ConversationActivity.this);
                 progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
                 progress.setIndeterminate(true);
@@ -639,7 +639,7 @@ public class ConversationActivity extends AppCompatActivity {
             }
 
             @Override
-            protected Boolean doInBackground(Void... params) {
+            protected Boolean doInBackground(Void... params){
                 try {
                     for (HashMap<String, String> msg : list) {
                         final ConversationMessageInfo ci = new ConversationMessageInfo();
@@ -679,9 +679,9 @@ public class ConversationActivity extends AppCompatActivity {
 
                             if (ConversationMessageStatus.CREATED == ci.getStatus()) {
                                 ci.setId(Long.parseLong(tempId));
-                                runOnUiThread(new Runnable() {
+                                runOnUiThread(new Runnable(){
                                     @Override
-                                    public void run() {
+                                    public void run(){
                                         sendMessageTask(ci).execute();
                                     }
                                 });
@@ -706,7 +706,7 @@ public class ConversationActivity extends AppCompatActivity {
             }
 
             @Override
-            protected void onPostExecute(Boolean state) {
+            protected void onPostExecute(Boolean state){
                 super.onPostExecute(state);
                 mSwipeRefreshLayout.setRefreshing(false);
                 if (isThereUnread) {
@@ -733,11 +733,12 @@ public class ConversationActivity extends AppCompatActivity {
                 adapter.sort(comparator);
                 adapter.notifyDataSetChanged();
                 //adapter.sort(comparator);
-                if (progress != null)
+                if (progress != null) {
                     progress.dismiss();
+                }
             }
 
-            private String getListString(List<Long> ids) {
+            private String getListString(List<Long> ids){
                 int i = 0;
                 String s = "";
                 for (Long id : ids) {
@@ -753,11 +754,11 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
-    public AsyncTask<Void, Void, Boolean> sendMessageTask(final ConversationMessageInfo first) {
-        return new AsyncTask<Void, Void, Boolean>() {
+    public AsyncTask<Void, Void, Boolean> sendMessageTask(final ConversationMessageInfo first){
+        return new AsyncTask<Void, Void, Boolean>(){
 
             @Override
-            protected Boolean doInBackground(Void... params) {
+            protected Boolean doInBackground(Void... params){
                 try {
                     GsonBuilder builder = new GsonBuilder();
                     Gson gson = builder.create();
@@ -772,7 +773,7 @@ public class ConversationActivity extends AppCompatActivity {
             }
 
             @Override
-            protected void onPostExecute(Boolean state) {
+            protected void onPostExecute(Boolean state){
                 super.onPostExecute(state);
                 sendMessage.setEnabled(true);
                 if (state) {
@@ -785,17 +786,17 @@ public class ConversationActivity extends AppCompatActivity {
         };
     }
 
-    public class SetMsgStatusTask extends Thread {
+    public class SetMsgStatusTask extends Thread{
         private Long id;
         private ConversationMessageStatus status;
 
-        public SetMsgStatusTask(Long id, ConversationMessageStatus status) {
+        public SetMsgStatusTask(Long id, ConversationMessageStatus status){
             this.id = id;
             this.status = status;
         }
 
         @Override
-        public void run() {
+        public void run(){
             super.run();
             try {
                 //TODO restClient.setConversationMessageStat(id, status);
@@ -805,7 +806,7 @@ public class ConversationActivity extends AppCompatActivity {
         }
 
 
-        private void postExecute(Boolean state) {
+        private void postExecute(Boolean state){
         }
 
     }

@@ -8,7 +8,7 @@ public class DbConstants{
      * DATABASE CONSTANTS
      ***********************************/
     public static Integer ASIM_DB_VERSION = 1;
-    public static String ASIM_DATABASE_NAME = "ASIM";
+    public static String ASIM_DATABASE_NAME = "ASIM2";
     //Chat Table
     public static String CHAT_TABLE_NAME = "Chat";
     public static String CHAT_ID = "_id";
