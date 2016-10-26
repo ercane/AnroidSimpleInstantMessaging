@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/AnroidMqttMessaging.iml" filepath="$PROJECT_DIR$/AnroidMqttMessaging.iml" />
+      <module fileurl="file://$PROJECT_DIR$/AnroidSimpleInstantMessaging.iml" filepath="$PROJECT_DIR$/AnroidSimpleInstantMessaging.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>
