@@ -46,6 +46,7 @@ import messaging.mqtt.android.tasks.MqttSendMsgTask;
 import messaging.mqtt.android.tasks.MqttSubscribeTask;
 import messaging.mqtt.android.tasks.PbKeyProcessorTask;
 import messaging.mqtt.android.util.BoolFlag;
+import messaging.mqtt.android.view.ChangeBrokerView;
 
 public class ContactActivity extends AppCompatActivity {
 
@@ -264,7 +265,7 @@ public class ContactActivity extends AppCompatActivity {
             progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
             progress.setIndeterminate(true);
             progress.setProgress(0);
-            progress.setCancelable(false);
+            progress.setCancelable(true);
             progress.show();
 
 
@@ -337,6 +338,12 @@ public class ContactActivity extends AppCompatActivity {
                 break;
             case R.id.joinContact:
                 joinContact();
+                break;
+            case R.id.changeBroker:
+                ChangeBrokerView view = new ChangeBrokerView(ContactActivity.this);
+                AlertDialog dialog = view.getBuilder().create();
+                view.setDialog(dialog);
+                dialog.show();
                 break;
         }
         return true;

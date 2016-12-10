@@ -14,5 +14,10 @@
         android:icon="@drawable/ic_person_add_white_24dp"
         android:title="Add contact"
         app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/changeBroker"
+        android:icon="@drawable/option_icon"
+        android:title="Change Broker"
+        app:showAsAction="ifRoom"/>
 
 </menu>

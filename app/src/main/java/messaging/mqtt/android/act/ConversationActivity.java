@@ -37,8 +37,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -760,9 +759,10 @@ public class ConversationActivity extends AppCompatActivity{
             @Override
             protected Boolean doInBackground(Void... params){
                 try {
-                    GsonBuilder builder = new GsonBuilder();
+            /*        GsonBuilder builder = new GsonBuilder();
                     Gson gson = builder.create();
-                    String json = gson.toJson(first);
+                    String json = gson.toJson(first);*/
+                    String json = new ObjectMapper().writeValueAsString(first);
                     byte[] content = json.getBytes();
                     byte[] msgEncrypted = getMsgEncrypted(content);
                     return AsimService.getMqttInit().sendMessage(chatTopic, msgEncrypted);

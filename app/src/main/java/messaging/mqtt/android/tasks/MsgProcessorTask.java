@@ -8,7 +8,7 @@ import android.os.Message;
 import android.util.Base64;
 import android.util.Log;
 
-import com.google.gson.Gson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.HashMap;
 
@@ -86,7 +86,8 @@ public class MsgProcessorTask implements Runnable{
             } else {
                 byte[] decryptMsg = MsgEncryptOperations.decryptMsg(topic, payload);
                 String cmiJson = new String(decryptMsg, "UTF-8");
-                ConversationMessageInfo cmi = new Gson().fromJson(cmiJson, ConversationMessageInfo.class);
+                //ConversationMessageInfo cmi = new Gson().fromJson(cmiJson, ConversationMessageInfo.class);
+                ConversationMessageInfo cmi = new ObjectMapper().readValue(decryptMsg, ConversationMessageInfo.class);
                 if (!Build.ID.equals(cmi.getOwnId())) {
                     saveMessage(Long.parseLong(chatByTopic.get(DbConstants.CHAT_ID)), cmi);
                 }
@@ -116,6 +117,7 @@ public class MsgProcessorTask implements Runnable{
     }
 
     private synchronized void saveMessage(Long chatId, ConversationMessageInfo cmi) throws Exception{
+        Log.e(TAG, "Message saving....");
         cmi.setChatId(chatId);
         cmi.setType(ConversationMessageType.RECEIVED);
         byte[] encrypt = DbEncryptOperations.encrypt(cmi.getContent());
